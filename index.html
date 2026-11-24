@@ -271,6 +271,16 @@ body,.game{background:#241d28}
 .game.author-fracture .choice:nth-child(2){transform:translateX(2px);border-color:#8d6479}
 .game.author-fracture .choice:nth-child(3){border-style:dashed;color:#ffe8ec;background:#4a3141}
 .game.author-fracture .story{white-space:pre-line}
+
+/* Artwork slots remain entirely hidden until approved image assets are enabled. */
+.game.has-scene-art #art{display:block!important;position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.game #art .scene-background,.game #art .scene-cg{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+.game.has-scene-art #art:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#18132077 0%,transparent 34%,#1d172444 60%,#140f20aa 100%);pointer-events:none}
+.game.has-character-art .characters{display:flex!important;pointer-events:none;z-index:3;justify-content:space-around;align-items:flex-end;bottom:26%;height:54%;left:12%;right:12%}
+.scene-portrait{width:min(34vw,345px);max-height:100%;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 13px 24px #17101d99)}
+.scene-portrait.left{margin-right:auto}.scene-portrait.right{margin-left:auto}
+.game.has-scene-cg .chapter-display{opacity:.24}
+@media(max-width:650px){.game.has-character-art .characters{left:0;right:0;bottom:42%;height:39%}.scene-portrait{width:49vw}.game.has-scene-cg .chapter-display{opacity:.1}}
 </style></head>
 <body><div class="shell"><header class="royal-header">
  <div class="header-actions"><button class="settings-trigger" id="menuToggle" type="button" aria-label="Open game settings" aria-expanded="false" aria-controls="settingsMenu">⚙ <span class="chevron">⌄</span></button>
@@ -566,6 +576,108 @@ function storyChoices(node,s){
  if(s.at==='courtWhispers'&&p.compassion>=19)available.push(['Ask Tessa to make sure Mira reaches home safely.','courtRecords',{rep:2,personality:{compassion:2}}]);
  return available;
 }
+
+/* Art integration: image paths are reserved now; do not show placeholders.
+   Add the matching ID to ART_READY only after the corresponding image is uploaded. */
+const ART_READY=new Set([]);
+const ART={
+ backgrounds:{
+  chamber:'assets/backgrounds/vale_estate/vale_bedroom_morning.webp',
+  hall:'assets/backgrounds/palace/palace_reception_hall.webp',
+  garden:'assets/backgrounds/palace/moonrose_garden.webp',
+  library:'assets/backgrounds/tower/forbidden_library.webp',
+  tower:'assets/backgrounds/tower/star_observatory.webp',
+  ballroom:'assets/backgrounds/palace/imperial_ballroom.webp',
+  north:'assets/backgrounds/north/winter_duchy.webp',
+  trial:'assets/backgrounds/palace/royal_tribunal.webp',
+  sareth:'assets/backgrounds/sareth/sareth_harbor.webp',
+  ship:'assets/backgrounds/sareth/ashwind_ship.webp',
+  blank:'assets/backgrounds/meta/unwritten_room.webp'
+ },
+ portraits:{},
+ cg:{
+  ch1_mirror:'assets/cg/shared/ch1_mirror_reveal.webp',
+  ch1_first_court:'assets/cg/shared/ch1_mira_wine.webp',
+  trial:'assets/cg/shared/ch5_tribunal.webp',
+  duke_collar:'assets/cg/elian/duke_collar_gift.webp',
+  prince_contract:'assets/cg/cassian/prince_contract.webp',
+  mage_lens:'assets/cg/lucien/memory_lens.webp',
+  mercenary_departure:'assets/cg/kael/sareth_departure.webp',
+  author_glitch:'assets/cg/aurelian/author_go_home_glitch.webp',
+  winter_ending:'assets/endings/elian_horrible.webp',
+  author_ending:'assets/endings/aurelian_horrible.webp'
+ },
+ ui:{
+  corner_left:'assets/ui/ornaments/gold_flower_left.webp',
+  corner_right:'assets/ui/ornaments/gold_flower_right.webp',
+  title_divider:'assets/ui/ornaments/title_divider.webp',
+  dialogue_crest:'assets/ui/frames/dialogue_crest.webp'
+ }
+};
+for(const id of ['sera','cassian','elian','lucien','kael','aurelian','mira','tessa']){
+ const slug=id==='sera'?'seraphina':id;
+ ART.portraits[id]={};
+ for(const expression of ['neutral','shocked','guarded','soft','angry','worried']){
+  ART.portraits[id][expression]='assets/portraits/'+slug+'/'+slug+'_formal_'+expression+'.webp';
+ }
+}
+const expressionFor=(id,speaker,scene)=>{
+ if(id==='sera')return scene==='ch1_mirror'?'shocked':'guarded';
+ if(speaker&&speaker.toLowerCase().includes(id==='cassian'?'cassian':id==='elian'?'elian':id==='lucien'?'lucien':id==='kael'?'kael':id==='aurelian'?'aurelian':id))return 'neutral';
+ return 'neutral';
+};
+function assignSceneVisuals(){
+ for(const [id,node] of Object.entries(scenes)){
+  if(node.visuals)continue;
+  const route=id.match(/^route_(cassian|elian|lucien|kael|aurelian)_/);
+  const partner=route?.[1];
+  const cast=partner?['sera',partner]:((node.who||[]).filter(Boolean));
+  const mappedBg=partner==='kael'?'sareth':partner==='aurelian'?'blank':null;
+  node.visuals={
+   background:mappedBg||node.bg||'hall',
+   portraits:cast.slice(0,2).map((who,i)=>({character:who,expression:expressionFor(who,node.speaker,id),side:i===0?'left':'right'})),
+   cg:null,
+   hidePortraits:false,
+   uiMood:partner||node.bg||'court',
+   music:null,sfx:null
+  };
+ }
+ const cgMap={ch1_mirror:'ch1_mirror',ch1_mira:'ch1_first_court',act5Shock:'trial',route_elian_2:'duke_collar',route_cassian_2:'prince_contract',route_lucien_3:'mage_lens',route_kael_0:'mercenary_departure',authorLoop:'author_glitch'};
+ for(const [scene,key] of Object.entries(cgMap)){if(scenes[scene]){scenes[scene].visuals.cg=key;scenes[scene].visuals.hidePortraits=true;}}
+}
+assignSceneVisuals();
+const artworkState={scene:null,token:0};
+function renderSceneArt(node){
+ const art=$('art'),characters=$('characters'),game=$('game');
+ const vis=node.visuals||{};
+ art.replaceChildren();characters.replaceChildren();
+ game.classList.remove('has-scene-art','has-character-art','has-scene-cg');
+ game.dataset.uiMood=vis.uiMood||'court';
+ const token=++artworkState.token;
+ const cg=vis.cg&&ART_READY.has('cg:'+vis.cg)?ART.cg[vis.cg]:null;
+ const bgKey=vis.background;
+ const bg=!cg&&bgKey&&ART_READY.has('background:'+bgKey)?ART.backgrounds[bgKey]:null;
+ const src=cg||bg;
+ if(src){
+  const img=document.createElement('img');img.className=cg?'scene-cg':'scene-background';
+  img.alt='';img.decoding='async';img.loading='eager';
+  img.onload=()=>{if(token===artworkState.token)game.classList.add('has-scene-art',...(cg?['has-scene-cg']:[]));};
+  img.onerror=()=>{img.remove();if(token===artworkState.token)game.classList.remove('has-scene-art','has-scene-cg');};
+  img.src=src;art.appendChild(img);
+ }
+ if(cg||vis.hidePortraits)return;
+ for(const spec of vis.portraits||[]){
+  const path=ART.portraits[spec.character]?.[spec.expression||'neutral'];
+  const key='portrait:'+spec.character+':'+(spec.expression||'neutral');
+  if(!path||!ART_READY.has(key))continue;
+  const img=document.createElement('img');img.className='scene-portrait '+(spec.side||'left');
+  img.alt='';img.decoding='async';img.loading='eager';
+  img.onload=()=>{if(token===artworkState.token)game.classList.add('has-character-art')};
+  img.onerror=()=>{img.remove();if(token===artworkState.token&&!characters.children.length)game.classList.remove('has-character-art')};
+  img.src=path;characters.appendChild(img);
+ }
+}
+
 function choose(choice,index){
  const node=scenes[state.at];
  if(!node)return;
@@ -606,8 +718,7 @@ function render(){
  $('game').dataset.scene=node.bg;
  $('game').classList.toggle('author-fracture',state.at==='authorLoop'||state.at==='authorBreak'||state.at==='route_aurelian_reckoning');
  if(typeof node.onEnter==='function'&&!state.flags['visited_'+state.at]){state.flags['visited_'+state.at]=true;node.onEnter()}
- $('art').innerHTML='';
- $('characters').innerHTML='';
+ renderSceneArt(node);
  $('sceneTitle').textContent=state.at==='authorLoop'||state.at==='authorBreak'?'CHAPTER ??':'CHAPTER '+String(node.chapter).padStart(2,'0');
  $('sceneSub').textContent=(backgrounds[node.bg]||backgrounds.hall)[0];
  $('speaker').textContent=node.speaker||'Narrator';
