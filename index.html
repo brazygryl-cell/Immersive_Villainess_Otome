@@ -262,6 +262,15 @@ body,.game{background:#241d28}
 #startPanel .lead{margin:0 auto 22px;max-width:495px}
 #startPanel .lore{background:#211b2a90;border-color:#ba947475}
 @media(max-width:650px){#startPanel{padding:12px}#startPanel .panel-inner{max-height:94dvh;padding:23px 17px}#startPanel h1{font-size:clamp(39px,9.5vw,56px);margin:8px 0 15px}#startPanel .lead{margin-bottom:14px}}
+
+/* Controlled visual-novel reality fracture on the hidden Author route only */
+.game.author-fracture{background:radial-gradient(ellipse at 52% 42%,#574052,#262032 68%,#100e19)}
+.game.author-fracture .chapter-heading{letter-spacing:.24em;text-shadow:2px 1px #c07d98,-2px -1px #6a738f,0 0 20px #f2bcd388}
+.game.author-fracture .dialogue{border-color:#a98cb1;box-shadow:2px 0 #c9a4bb,-3px 1px #4b607c,0 11px 39px #10081aca}
+.game.author-fracture .royal-clock{border-color:#ab879f}
+.game.author-fracture .choice:nth-child(2){transform:translateX(2px);border-color:#8d6479}
+.game.author-fracture .choice:nth-child(3){border-style:dashed;color:#ffe8ec;background:#4a3141}
+.game.author-fracture .story{white-space:pre-line}
 </style></head>
 <body><div class="shell"><header class="royal-header">
  <div class="header-actions"><button class="settings-trigger" id="menuToggle" type="button" aria-label="Open game settings" aria-expanded="false" aria-controls="settingsMenu">⚙ <span class="chevron">⌄</span></button>
@@ -493,7 +502,8 @@ for(const [id,blueprint] of Object.entries(routeBlueprints)){
 scenes.authorLoop={chapter:12,bg:'tower',speaker:'Aurelian',text:'The choice flashes, disappears, and returns. Aurelian is smiling too hard. “Go home,” he repeats. “I made the decision simple for you.”\\n\\nEvery answer is the same. Yet there is a seam at the bottom of the page, a line he did not think to erase.',onEnter:()=>{state.flags.authorLoops=(state.flags.authorLoops||0)+1},choices:[
  ['Go home.','authorLoop',{traits:{authorship:6}}],
  ['Go home.','authorLoop',{traits:{authorship:6}}],
- ['[ Refuse to choose. ]','authorBreak',{traits:{autonomy:20,restraint:8},flag:'broke_choice_system'},s=>(s.flags.authorLoops||0)>=2]
+ ['[ Refuse to choose. ]','authorBreak',{traits:{autonomy:20,restraint:8},flag:'broke_choice_system'},s=>(s.flags.authorLoops||0)>=2],
+ ['[ Surrender the page. ]','route_aurelian_resolve',{traits:{authorship:20,dependency:12}},s=>(s.flags.authorLoops||0)>=2]
 ]};
 scenes.authorBreak={chapter:13,bg:'tower',speaker:'Aurelian',text:'The page tears down its center. The day counter stutters. Somewhere in the code of this world, a command fails to execute.\\n\\n“That,” Aurelian whispers, “is not a choice I wrote.” His eyes widen with equal parts terror and wonder. For one breath, he can no longer predict whether you will touch his hand.',choices:[
  ['Tell him he may love you, but he may not author you.','route_aurelian_resolve',{traits:{autonomy:12,restraint:9}}],
@@ -543,6 +553,7 @@ function choose(choice,index){
  modifyTraits(effect);
  for(const [key,val] of Object.entries(effect)){if(['traits','flag','route'].includes(key))continue;if(key in state.affections)state.affections[key]+=val;else add(key,val)}
  state.history.push({from:state.at,choice:label});
+ if(state.at==='authorLoop'&&next==='authorLoop')state.flags.authorLoops=(state.flags.authorLoops||0)+1;
  state.turn++;state.at=next.startsWith('end_')&&state.route?'end_'+state.route+'_'+decideRouteEnding(state.route,state):next;
  render();store();
 }
@@ -550,22 +561,23 @@ function render(){
  const node=scenes[state.at];if(!node){finish(state.at);return}
  state.chapter=node.chapter;
  $('game').dataset.scene=node.bg;
+ $('game').classList.toggle('author-fracture',state.at==='authorLoop'||state.at==='authorBreak'||state.at==='route_aurelian_reckoning');
  if(typeof node.onEnter==='function'&&!state.flags['visited_'+state.at]){state.flags['visited_'+state.at]=true;node.onEnter()}
  $('art').innerHTML='';
  $('characters').innerHTML='';
- $('sceneTitle').textContent='CHAPTER '+String(node.chapter).padStart(2,'0');
+ $('sceneTitle').textContent=state.at==='authorLoop'||state.at==='authorBreak'?'CHAPTER ??':'CHAPTER '+String(node.chapter).padStart(2,'0');
  $('sceneSub').textContent=(backgrounds[node.bg]||backgrounds.hall)[0];
  $('speaker').textContent=node.speaker||'Narrator';
  $('story').textContent=node.text;
  $('choices').innerHTML='';
  node.choices.forEach((c,i)=>{
   const b=document.createElement('button');b.className='choice'+(node.choices.length%2===1&&i===node.choices.length-1?' wide':'');
-  const disabled=c[3]&&!c[3](state);b.disabled=Boolean(disabled);
+  const disabled=c[3]&&!c[3](state);if(state.at==='authorLoop'&&i>=2&&disabled)return;b.disabled=Boolean(disabled);
   b.innerHTML='<span class="num">'+(i+1)+'</span>'+c[0]+(disabled?'<span class="hint">Requires additional evidence or trust</span>':'');
   b.addEventListener('click',()=>choose(c,i));$('choices').appendChild(b);
  });
  $('rep').textContent=state.rep;$('inf').textContent=state.inf;$('sec').textContent=state.sec;
- $('chapter').textContent='CHAPTER '+state.chapter+' — '+state.turn+' decisions made';$('countdown').textContent='DAY '+String(Math.min(90,1+Math.floor(state.turn*1.1))).padStart(2,'0')+' / 90';
+ $('chapter').textContent='CHAPTER '+state.chapter+' — '+state.turn+' decisions made';$('countdown').textContent=state.at==='authorLoop'||state.at==='authorBreak'?'DAY -- / 90':'DAY '+String(Math.min(90,1+Math.floor(state.turn*1.1))).padStart(2,'0')+' / 90';
  $('hint').textContent=state.items.length+' clues collected';
  $('dialogue').scrollTop=0;
  royalSceneArrival();
