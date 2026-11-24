@@ -197,7 +197,7 @@ function render(){
  state.chapter=node.chapter;
  if(typeof node.onEnter==='function'&&!state.flags['visited_'+state.at]){state.flags['visited_'+state.at]=true;node.onEnter()}
  $('art').innerHTML=backdrop(node.bg);
- $('characters').innerHTML=(node.who||[]).map((id,i)=>portraits(id,i===0)).join('');
+ const cast=(node.who||[]).filter(id=>id!=='sera');$('characters').innerHTML=portraits('sera',true)+cast.slice(0,1).map(id=>portraits(id,false)).join('');
  $('speaker').textContent=node.speaker||'Narrator';
  $('story').textContent=node.text;
  $('choices').innerHTML='';
@@ -208,7 +208,7 @@ function render(){
   b.addEventListener('click',()=>choose(c,i));$('choices').appendChild(b);
  });
  $('rep').textContent=state.rep;$('inf').textContent=state.inf;$('sec').textContent=state.sec;
- $('chapter').textContent='CHAPTER '+state.chapter+' / 5 — '+state.turn+' decisions made';
+ $('chapter').textContent='CHAPTER '+state.chapter+' / 5 — '+state.turn+' decisions made';$('countdown').textContent='DAY '+String(Math.min(90,1+Math.floor(state.turn*2.25))).padStart(2,'0')+' / 90';
  $('hint').textContent=state.items.length+' clues collected';
  $('dialogue').scrollTop=0;
 }
@@ -246,13 +246,44 @@ function startMusic(){
  pulse();musicLoop=setInterval(pulse,440)
  }catch(e){musicOn=false;$('music').textContent='♫ Music unavailable'}
 }
+
+function courtPanel(kind){
+ const title=$('detailsTitle'),content=$('detailsContent');content.innerHTML='';
+ if(kind==='affection'){
+  title.textContent='The Court of Hearts';
+  const intro=document.createElement('p');intro.textContent='Allies and adversaries remember how you treat them.';content.appendChild(intro);
+  Object.entries(state.affections).forEach(([id,points])=>{
+   const row=document.createElement('div');row.className='entry';
+   const desc=document.createElement('span');desc.textContent=people[id].name+' — '+people[id].title;
+   const val=document.createElement('b');val.textContent='♥ '+points+' affinity';row.append(desc,val);content.appendChild(row);
+  });
+ }else if(kind==='inventory'){
+  title.textContent='Imperial Inventory';
+  const intro=document.createElement('p');intro.textContent='Evidence and keepsakes collected on your journey.';content.appendChild(intro);
+  if(!state.items.length){const empty=document.createElement('div');empty.className='lore';empty.textContent='Your inventory is empty. The palace hides many secrets.';content.appendChild(empty)}
+  else for(const id of state.items){const row=document.createElement('div');row.className='entry';row.textContent='✦ '+(items[id]||id);content.appendChild(row)}
+ }else{
+  title.textContent='Load Your Chronicle';
+  const desc=document.createElement('p');desc.textContent='Return to your last saved decision.';content.appendChild(desc);
+  const btn=document.createElement('button');btn.className='cta';btn.textContent='◈ Load saved progress';
+  btn.addEventListener('click',()=>{
+   if(load()){$('detailsPanel').classList.add('hidden');$('startPanel').classList.add('hidden');$('dialogue').style.display='block';if(endings[state.at])finish(state.at);else render();notify('Your saved story has been restored')}
+   else notify('No saved story was found')
+  });content.appendChild(btn);
+ }
+ $('detailsPanel').classList.remove('hidden');
+}
+$('affection').addEventListener('click',()=>courtPanel('affection'));
+$('inventory').addEventListener('click',()=>courtPanel('inventory'));
+$('load').addEventListener('click',()=>courtPanel('load'));
+$('closeDetails').addEventListener('click',()=>$('detailsPanel').classList.add('hidden'));
 $('music').addEventListener('click',()=>{musicOn=!musicOn;$('music').textContent='♫ Music: '+(musicOn?'On':'Off');if(!musicOn){clearInterval(musicLoop);musicLoop=null}else startMusic()});
 $('new').addEventListener('click',reset);$('replay').addEventListener('click',reset);
 $('continue').addEventListener('click',()=>{$('startPanel').classList.add('hidden');if(endings[state.at])finish(state.at);else render()});
 $('save').addEventListener('click',()=>{store();notify('Your story has been saved')});
 $('journal').addEventListener('click',journal);$('closeJournal').addEventListener('click',()=>$('journalPanel').classList.add('hidden'));
 $('fullscreen').addEventListener('click',()=>{if(document.fullscreenElement)document.exitFullscreen();else $('game').requestFullscreen?.()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')$('journalPanel').classList.add('hidden');if(!/^[1-4]$/.test(e.key)||!$('journalPanel').classList.contains('hidden')||!$('startPanel').classList.contains('hidden'))return;const b=$('choices').children[Number(e.key)-1];if(b&&!b.disabled)b.click()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('journalPanel').classList.add('hidden');$('detailsPanel').classList.add('hidden')}if(!/^[1-4]$/.test(e.key)||!$('journalPanel').classList.contains('hidden')||!$('startPanel').classList.contains('hidden'))return;const b=$('choices').children[Number(e.key)-1];if(b&&!b.disabled)b.click()});
 if(load())$('continue').style.display='block';
 })();
 </script></body></html>
