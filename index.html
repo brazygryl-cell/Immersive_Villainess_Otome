@@ -36,6 +36,48 @@ body{background:radial-gradient(ellipse at 50% 10%,#684663,#151127 65%,#0c101b)}
 .panel-inner{background:radial-gradient(ellipse at 50% 0%,#775273,#281d36 75%);border:2px solid #ebcb9e;box-shadow:inset 0 0 0 5px #b68a7b38,0 22px 75px #0d0718}
 .panel h1{font-size:clamp(55px,8vw,88px)}
 @media(max-width:670px){.game{border:0;border-radius:0}.characters{bottom:155px;height:62%}.portrait{width:57vw}.portrait.left{margin-right:-20vw}.portrait.right{margin-left:-20vw}.portrait.active{transform:translateY(-3px) scale(.96)}.dialogue{max-height:59dvh}.story{font-size:22px}.name{font-size:17px}.scene-label{font-size:12px}.brand{font-size:22px}.brand small{font-size:9px}}
+
+/* THE IMPERIAL EDITION · dramatic RoFan-inspired visual novel interface */
+html,body{height:100%;overflow:hidden;background:#160e23}
+.shell{width:100vw;max-width:none;height:100dvh;padding:0;margin:0}
+.game,.game:fullscreen{width:100%;height:100dvh;min-height:0;max-height:none;border:0;box-shadow:none;border-radius:0;background:#34243e}
+.game:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 72% 24%,#f3c18c40,transparent 42%),radial-gradient(ellipse at 26% 48%,#e58dd837,transparent 48%);pointer-events:none;z-index:1}
+.art{filter:saturate(1.18) contrast(1.05)}.art:after{background:linear-gradient(90deg,#110a2066,transparent 35%,#170f2555 100%),linear-gradient(0deg,#140d21ef,transparent 59%,#1e122541)}
+.glitter{z-index:2;opacity:.5;background-size:101px 112px,164px 199px}
+.royal-header{position:absolute;z-index:11;top:17px;left:50%;transform:translateX(-50%);text-align:center;width:min(68%,760px);pointer-events:none}
+.royal-header .brand{font:700 clamp(32px,4.4vw,66px)/.79 "Cormorant Garamond",serif;letter-spacing:-.02em;color:#ffe6b8;text-shadow:0 3px 0 #8c5680,0 6px 26px #11091e}
+.royal-header small{display:block;font:800 clamp(8px,1vw,12px) "DM Sans",sans-serif;letter-spacing:.35em;color:#f8d9ba;margin-bottom:12px;text-shadow:0 3px 9px #1a0d27}
+.royal-header em{display:block;font:500 clamp(15px,2vw,24px) "Cormorant Garamond",serif;color:#f6d59c;margin-top:13px;letter-spacing:.15em}
+.royal-clock{position:fixed;top:15px;right:18px;background:linear-gradient(120deg,#291530ed,#543253e8);border:1px solid #f2ca92;border-radius:30px;padding:11px 18px;box-shadow:0 0 0 4px #3e2441ab,0 0 24px #edb89d55;width:208px}
+.royal-clock small{display:block;font:700 9px "DM Sans",sans-serif;letter-spacing:.1em;margin:0 0 2px}
+.royal-clock strong{font:700 27px "Cormorant Garamond",serif;color:#ffeac8}
+.royal-menu{position:absolute;top:45%;transform:translateY(-40%);left:13px;display:flex;flex-direction:column;gap:7px;z-index:12;width:clamp(130px,14vw,200px)}
+.royal-menu button{display:block;width:100%;padding:12px 17px;min-height:48px;border:1px solid #edc48e94;border-radius:8px 26px 26px 8px;text-align:left;color:#ffedf3;background:linear-gradient(100deg,#23142fe8,#563055d9);box-shadow:inset 0 0 0 1px #e8b98b24,0 5px 17px #160c27a0;font:700 clamp(15px,1.7vw,21px) "Cormorant Garamond",serif;transition:background .17s,transform .17s}
+.royal-menu button:hover{transform:translateX(7px);background:#9d6583;border-color:#ffe4ba}
+.characters{left:clamp(130px,12vw,190px);right:10px;bottom:clamp(155px,20vh,240px);height:73%;justify-content:space-around;gap:0;z-index:3}
+.portrait{width:clamp(205px,30vw,450px);flex-shrink:0;height:100%}
+.portrait.active{transform:translateY(-6px) scale(1.08);filter:drop-shadow(0 0 29px #efc5d262)}
+.portrait:not(.active){transform:scale(.9);opacity:.87}
+.scene-label{top:auto;bottom:clamp(270px,35vh,350px);left:clamp(165px,17vw,280px);z-index:8;padding:7px 14px;background:#1f132ddc;border:1px solid #ecd0a7;font:700 14px "Cormorant Garamond",serif;letter-spacing:.15em}
+.hud{top:auto;bottom:clamp(270px,35vh,350px);right:24px;max-width:45%;z-index:8}
+.stat{background:#251632ea;border:1px solid #e4c69e9c;box-shadow:0 4px 16px #14091f77}
+.dialogue{left:clamp(15px,14vw,230px);right:clamp(15px,5vw,85px);bottom:15px;max-height:clamp(250px,34vh,365px);padding:20px 24px 14px;border:2px solid #f2ce97;border-radius:12px;background:linear-gradient(130deg,#281933f2,#1d142af3);box-shadow:0 0 0 5px #724b6799,0 12px 40px #0c071bc9;z-index:10}
+.dialogue:before,.dialogue:after{content:"✧";position:absolute;top:-17px;color:#ffe5b4;font-size:30px;text-shadow:0 0 13px #f9b9ab}
+.dialogue:before{left:15px}.dialogue:after{right:15px}
+.name{background:#442447;color:#ffe6b8;border:1px solid #f5d2a0;box-shadow:0 4px 13px #160c24;border-radius:25px;min-width:170px;text-align:center;transform:translateY(-27px);margin-bottom:-20px;padding:5px 18px;font-size:20px}
+.story{font:500 clamp(18px,2.3vw,29px)/1.21 "Cormorant Garamond",serif;color:#fff1ee;max-width:none;min-height:0;margin:0 0 12px}
+.choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.choice{min-height:44px;padding:10px 14px;text-align:center;border:1px solid #f9d3a4;border-radius:30px;background:linear-gradient(130deg,#77466edb,#382146e8);box-shadow:inset 0 0 0 2px #ffdda818;color:#fff3ed;font:700 clamp(13px,1.4vw,18px) "Cormorant Garamond",serif}
+.choice:hover{background:#ad7295;box-shadow:0 0 20px #eeb3c355}
+.choice .num{background:#d7ac81;color:#41293d}
+.statusline{color:#e7c5d8;font:500 13px "Cormorant Garamond",serif}
+.panel{z-index:25;background:#190e2ce8}
+.panel-inner{border:2px solid #f4ce9b;border-radius:13px;background:radial-gradient(ellipse at top,#6e4269,#25162f 78%);box-shadow:0 0 0 5px #6d4565,0 27px 75px #0d0715,inset 0 0 0 6px #f7d2a010}
+.panel h1,.panel h2{color:#ffe0ab;text-shadow:0 3px 14px #201125}
+.cta{border-radius:30px;background:linear-gradient(90deg,#dfb280,#fbe0b0,#dfb280)}
+@media(max-width:900px){.royal-header{top:12px;width:60%}.royal-header .brand{font-size:clamp(27px,4.6vw,48px)}.royal-clock{right:10px;width:150px;padding:8px}.royal-clock strong{font-size:21px}.royal-clock small{font-size:8px}.royal-menu{width:118px;left:6px}.royal-menu button{font-size:16px;padding:9px;min-height:41px}.characters{left:100px}.dialogue{left:136px;right:15px}.scene-label{left:136px}}
+@media(max-width:650px){.game{height:100dvh;min-height:0}.royal-header{left:43%;top:9px;width:69%}.royal-header .brand{font-size:clamp(21px,5.1vw,34px)}.royal-header small{font-size:7px;letter-spacing:.12em;margin-bottom:6px}.royal-header em{font-size:12px;margin-top:5px}.royal-clock{width:110px;top:9px;right:6px;border-radius:8px;padding:6px}.royal-clock small{font-size:6px}.royal-clock strong{font-size:17px}.royal-menu{top:85px;left:6px;right:6px;transform:none;width:auto;flex-direction:row;flex-wrap:wrap;gap:4px}.royal-menu button{width:auto;min-height:33px;padding:5px 8px;border-radius:7px;font-size:13px}.royal-menu button:hover{transform:translateY(-2px)}.scene-label{top:149px;bottom:auto;left:6px;font-size:10px}.hud{top:148px;bottom:auto;right:6px;max-width:65%;gap:3px}.stat{font-size:8px;padding:4px}.characters{left:0;right:0;bottom:clamp(230px,43vh,380px);height:55%;justify-content:center}.portrait{width:56vw}.portrait.active{transform:scale(1)}.portrait:not(.active){margin-left:-18vw;transform:scale(.86)}.dialogue{left:6px;right:6px;bottom:6px;max-height:clamp(225px,43dvh,390px);padding:16px 12px 9px}.name{font-size:16px;min-width:120px;transform:translateY(-22px);margin-bottom:-16px}.story{font-size:clamp(17px,4.5vw,22px);line-height:1.16}.choices{grid-template-columns:1fr;gap:5px}.choice{min-height:35px;padding:7px 8px;font-size:13px}.statusline{font-size:10px}.panel-inner{max-height:88dvh}}
+@media(max-width:380px){.royal-menu button{font-size:11px}.royal-header .brand{font-size:21px}.dialogue{max-height:48dvh}.characters{height:48%;bottom:47vh}}
 </style></head>
 <body><div class="shell"><header class="royal-header"><div class="brand"><small>✦ THE CHRONICLES OF ASTERIA ✦</small>THE VILLAINESS'S<br>SECOND LIFE <em>❧ ── ✦ ♛ ✦ ── ❧</em></div><div class="royal-clock"><small>⌛ BEFORE THE EXECUTION</small><strong id="countdown">DAY 01 / 90</strong></div></header>
 <main class="game" id="game"><div class="art" id="art"></div><div class="glitter"></div><nav class="royal-menu" aria-label="Court menu"><button id="journal">▤ Journal</button><button id="save">♧ Save</button><button id="load">♢ Load</button><button id="affection">♡ Affection</button><button id="inventory">♧ Inventory</button><button id="music">♫ Music: Off</button><button id="fullscreen">⛶ Fullscreen</button></nav><div class="scene-label" id="location"></div><div class="hud"><span class="stat">♛ Reputation <b id="rep">0</b></span><span class="stat">✧ Influence <b id="inf">0</b></span><span class="stat">☾ Secrets <b id="sec">0</b></span></div><div class="characters" id="characters"></div>
