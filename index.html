@@ -551,6 +551,18 @@ for(const id of Object.keys(routeBlueprints)){
  scenes['route_'+id+'_resolve']={chapter:13,bg:routeScenery[id],speaker:'Narrator',text:'The story reaches its last page. Everything you chose still matters.',choices:[['Read the ending you created.','end_'+id+'_good',{}]]};
 }
 
+
+function storyChoices(node,s){
+ const available=node.choices.slice(),p=s.personality||initial().personality;
+ if(s.at==='audience'){
+  if(p.villainy>=12)available.push(['Give the court the villainess it expects; expose the instigator publicly.','defiance',{inf:2,personality:{villainy:4}}]);
+  if(p.compassion>=15)available.push(['Forget the plot for a moment. Ask Mira if she is all right.','kindness',{rep:2,personality:{compassion:4}}]);
+  if(p.recall<=44)available.push(['I cannot remember what happens next. Ask Mira what she saw.','watch',{sec:2,personality:{resolve:3}}]);
+ }
+ if(s.at==='courtWhispers'&&p.villainy>=16)available.push(['Find out who spreads the rumors and make them regret it.','courtRecords',{inf:2,personality:{villainy:3}}]);
+ if(s.at==='courtWhispers'&&p.compassion>=19)available.push(['Ask Tessa to make sure Mira reaches home safely.','courtRecords',{rep:2,personality:{compassion:2}}]);
+ return available;
+}
 function choose(choice,index){
  const node=scenes[state.at];
  if(!node)return;
@@ -598,7 +610,7 @@ function render(){
  $('speaker').textContent=node.speaker||'Narrator';
  $('story').textContent=personalizeScene(node,state);
  $('choices').innerHTML='';
- node.choices.forEach((c,i)=>{
+ storyChoices(node,state).forEach((c,i)=>{
   const b=document.createElement('button');b.className='choice'+(node.choices.length%2===1&&i===node.choices.length-1?' wide':'');
   const disabled=c[3]&&!c[3](state);if(state.at==='authorLoop'&&i>=2&&disabled)return;b.disabled=Boolean(disabled);
   b.innerHTML='<span class="num">'+(i+1)+'</span>'+c[0]+(disabled?'<span class="hint">Requires additional evidence or trust</span>':'');
