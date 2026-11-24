@@ -132,6 +132,10 @@ html,body{height:100%;overflow:hidden;background:#160e23}
 @media(max-width:900px){.royal-header .brand{font-size:clamp(32px,4.4vw,54px)}.royal-menu button{min-height:43px;font-size:16px}.royal-menu button:before{right:6px}.royal-clock{z-index:19}.royal-bloom span{font-size:42px}.royal-bloom span:nth-child(2){font-size:70px}.royal-bloom span:nth-child(3){font-size:60px}.royal-bloom span:nth-child(4){font-size:50px}}
 @media(max-width:650px){.royal-header{z-index:12}.royal-header .brand{font-size:clamp(22px,5.1vw,34px)}.royal-header .brand small{font-size:7px}.royal-menu{z-index:20;gap:5px}.royal-menu button{font-size:12px;min-height:33px;padding:6px 9px;border-radius:3px 10px 3px 10px}.royal-menu button:before{display:none}.royal-menu button:after{inset:2px;border-radius:2px 7px 2px 7px}.royal-clock{z-index:20}.royal-bloom{opacity:.4}.royal-bloom span{font-size:24px}.royal-bloom span:nth-child(2){font-size:44px}.royal-bloom span:nth-child(3){font-size:38px}.royal-bloom span:nth-child(4){font-size:32px}.filigree-corner{font-size:27px;top:3px}.corner-tl{left:6px}.corner-tr{right:6px}.ornate-arch{width:36vw;opacity:.3}.royal-ornament-layer:before{inset:3px}.dialogue{border-width:1.5px;box-shadow:0 0 0 3px #2b142bb0,0 0 0 4px #e1ac7666,0 5px 30px #100a21}.dialogue:before,.dialogue:after{font-size:23px;top:-15px}.dialogue-crest{width:36px;height:25px;top:-18px;font-size:18px}.name{font-size:16px}.story{font-size:clamp(17px,4.4vw,22px)}.choices{gap:6px}.choice{font-size:13px;min-height:39px;border-radius:3px 13px 3px 13px}.choice:before,.choice:after{font-size:8px}.choice:before{left:5px}.choice:after{right:5px}.panel-inner:before,.panel-inner:after{font-size:23px;top:4px}}
 @media(prefers-reduced-motion:reduce){.light-mote,.ambient-glow{animation:none!important}.royal-menu button,.choice{transition:none}}
+
+@keyframes royalStoryArrive{0%{filter:brightness(1.14);border-color:#ffe5b6}100%{filter:brightness(1);border-color:#e6b879}}
+.dialogue.story-arrival{animation:royalStoryArrive .55s ease-out}
+@media(prefers-reduced-motion:reduce){.dialogue.story-arrival{animation:none}}
 </style></head>
 <body><div class="shell"><header class="royal-header"><div class="brand"><small>✦ THE CHRONICLES OF ASTERIA ✦</small>THE VILLAINESS'S<br>SECOND LIFE <em>❧ ── ✦ ♛ ✦ ── ❧</em></div><div class="royal-clock"><small>⌛ BEFORE THE EXECUTION</small><strong id="countdown">DAY 01 / 90</strong></div></header>
 <main class="game" id="game"><div class="art" id="art"></div><div class="glitter"></div><div class="royal-ornament-layer" aria-hidden="true">
@@ -154,6 +158,29 @@ const SAVE='asteriaVillainessV1';
 const initial=()=>({at:'wake',chapter:1,rep:0,inf:0,sec:0,affections:{cassian:0,elian:0,lucien:0},flags:{},items:[],history:[],turn:0});
 let state=initial(),audio=null,musicOn=false,musicLoop=null;
 const add=(stat,n)=>{state[stat]=Math.max(0,state[stat]+n)};
+
+function initializeImperialAtmosphere(){
+ const root=$('lightShower');
+ if(!root||root.childElementCount)return;
+ const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ for(let i=0;i<(reduced?12:34);i++){
+  const mote=document.createElement('i');mote.className='light-mote';
+  const x=(i*37+11)%96,y=(i*61+17)%89,sz=i%5===0?3:1.5;
+  mote.style.setProperty('--x',x+'%');mote.style.setProperty('--y',y+'%');
+  mote.style.setProperty('--sz',sz+'px');mote.style.setProperty('--op',String(.28+(i%7)*.083));
+  mote.style.setProperty('--delay',-((i*7)%18)+'s');
+  mote.style.setProperty('--duration',(6+i%9)+'s');
+  root.appendChild(mote);
+ }
+}
+initializeImperialAtmosphere();
+function royalSceneArrival(){
+ const panel=$('dialogue');
+ panel.classList.remove('story-arrival');
+ void panel.offsetWidth;
+ panel.classList.add('story-arrival');
+}
+
 function getItem(id){return state.items.includes(id)}
 function giveItem(id){if(!getItem(id)){state.items.push(id);notify('NEW CLUE: '+items[id])}}
 function notify(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(notify.t);notify.t=setTimeout(()=>t.classList.remove('show'),2300)}
@@ -294,6 +321,7 @@ function choose(choice,index){
 function render(){
  const node=scenes[state.at];if(!node){finish(state.at);return}
  state.chapter=node.chapter;
+ $('game').dataset.scene=node.bg;
  if(typeof node.onEnter==='function'&&!state.flags['visited_'+state.at]){state.flags['visited_'+state.at]=true;node.onEnter()}
  $('art').innerHTML=backdrop(node.bg)+'<img class="illustrated-bg" src="assets/backgrounds/'+node.bg+'.webp" alt="" onload="this.classList.add(\'loaded\')" onerror="this.remove()"/>';
  const cast=(node.who||[]).filter(id=>id!=='sera');$('characters').innerHTML=portraits('sera',true)+cast.slice(0,1).map(id=>portraits(id,false)).join('');
@@ -310,10 +338,11 @@ function render(){
  $('chapter').textContent='CHAPTER '+state.chapter+' / 5 — '+state.turn+' decisions made';$('countdown').textContent='DAY '+String(Math.min(90,1+Math.floor(state.turn*2.25))).padStart(2,'0')+' / 90';
  $('hint').textContent=state.items.length+' clues collected';
  $('dialogue').scrollTop=0;
+ royalSceneArrival();
 }
 function finish(key){
  const end=endings[key]||endings.endFree;
- const finalBg=key==='endMagic'?'tower':key==='endFree'?'garden':'hall';$('art').innerHTML=backdrop(finalBg)+'<img class="illustrated-bg" src="assets/backgrounds/'+finalBg+'.webp" alt="" onload="this.classList.add(\'loaded\')" onerror="this.remove()"/>';
+ const finalBg=key==='endMagic'?'tower':key==='endFree'?'garden':'hall';$('game').dataset.scene=finalBg;$('art').innerHTML=backdrop(finalBg)+'<img class="illustrated-bg" src="assets/backgrounds/'+finalBg+'.webp" alt="" onload="this.classList.add(\'loaded\')" onerror="this.remove()"/>';
  const highest=Object.entries(state.affections).sort((a,b)=>b[1]-a[1])[0];
  const partner=highest[1]>=4?people[highest[0]]:null;
  $('characters').innerHTML=portraits('sera',true)+(key==='endRomance'&&partner?portraits(highest[0],true):'');
