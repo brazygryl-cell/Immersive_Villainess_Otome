@@ -303,7 +303,7 @@ body,.game{background:#241d28}
 'use strict';
 const $=id=>document.getElementById(id);
 const SAVE='asteriaVillainessV1';
-const initial=()=>({at:'wake',chapter:1,rep:0,inf:0,sec:0,affections:{cassian:0,elian:0,lucien:0,kael:0,aurelian:0},traits:{},route:null,flags:{},items:[],history:[],turn:0});
+const initial=()=>({at:'wake',chapter:1,rep:0,inf:0,sec:0,affections:{cassian:0,elian:0,lucien:0,kael:0,aurelian:0},traits:{autonomy:55,trust:15,restraint:15},route:null,flags:{},items:[],history:[],turn:0});
 let state=initial(),audio=null,musicOn=false,musicLoop=null;
 const add=(stat,n)=>{state[stat]=Math.max(0,state[stat]+n)};
 
@@ -605,7 +605,7 @@ function journal(){
  panel.classList.remove('hidden');
 }
 function store(){try{localStorage.setItem(SAVE,JSON.stringify(state))}catch(e){}}
-function load(){try{const v=JSON.parse(localStorage.getItem(SAVE));if(v&&typeof v.at==='string'&&v.affections&&v.flags&&v.items){state={...initial(),...v,affections:{...initial().affections,...v.affections},traits:v.traits||{},flags:v.flags||{}};return true}}catch(e){}return false}
+function load(){try{const v=JSON.parse(localStorage.getItem(SAVE));if(v&&typeof v.at==='string'&&v.affections&&v.flags&&v.items){state={...initial(),...v,affections:{...initial().affections,...v.affections},traits:{...initial().traits,...(v.traits||{})},flags:v.flags||{}};return true}}catch(e){}return false}
 function reset(){state=initial();$('dialogue').style.display='block';$('endPanel').classList.add('hidden');$('startPanel').classList.add('hidden');render();store()}
 function startMusic(){
  if(musicLoop)return;
