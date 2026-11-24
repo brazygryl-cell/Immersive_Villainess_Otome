@@ -136,6 +136,51 @@ html,body{height:100%;overflow:hidden;background:#160e23}
 @keyframes royalStoryArrive{0%{filter:brightness(1.14);border-color:#ffe5b6}100%{filter:brightness(1);border-color:#e6b879}}
 .dialogue.story-arrival{animation:royalStoryArrive .55s ease-out}
 @media(prefers-reduced-motion:reduce){.dialogue.story-arrival{animation:none}}
+
+/* Story-first layout: remove all placeholder portraits and procedural scene illustrations. */
+.game{background:radial-gradient(ellipse at 55% 33%,#654364 0%,#34223f 46%,#150f25 100%)}
+.game[data-scene="garden"]{background:radial-gradient(ellipse at 56% 32%,#554c6c,#26364c 59%,#151726)}
+.game[data-scene="north"]{background:radial-gradient(ellipse at 55% 30%,#50718a,#23374c 58%,#111a2d)}
+.game[data-scene="library"]{background:radial-gradient(ellipse at 55% 30%,#69516a,#36263b 60%,#181323)}
+.game[data-scene="tower"]{background:radial-gradient(ellipse at 52% 28%,#4d5a87,#26294b 62%,#151327)}
+.game[data-scene="ballroom"]{background:radial-gradient(ellipse at 55% 28%,#966583,#4c2b57 56%,#21132d)}
+.game[data-scene="trial"]{background:radial-gradient(ellipse at 50% 29%,#70445b,#392036 57%,#1a1025)}
+#art,.characters{display:none!important}
+.game:before{background:radial-gradient(ellipse at 57% 24%,#fff4d511,transparent 43%),radial-gradient(ellipse at 52% 58%,#eeb4e313,transparent 51%)}
+.royal-ornament-layer:before{inset:10px;opacity:.5}
+.royal-ornament-layer:after{background:radial-gradient(circle at 50% 36%,#fce9d010,transparent 42%)}
+.ornate-arch{opacity:.3;width:29vw;border-color:#ffdfa64b}
+.ornate-arch-left{left:16%}.ornate-arch-right{right:1%}
+.royal-bloom{opacity:.2;filter:none}
+.filigree-corner{opacity:.6}
+.royal-header{top:20px;left:50%;width:min(66vw,820px)}
+.royal-header .brand{font-size:clamp(39px,4.6vw,70px)}
+.royal-clock{right:20px;top:22px}
+.royal-menu{left:clamp(16px,2.5vw,46px);top:49%;transform:translateY(-45%);width:clamp(145px,15vw,208px)}
+.chapter-display{position:absolute;z-index:6;left:clamp(190px,20vw,350px);right:clamp(35px,5vw,95px);top:33%;transform:translateY(-50%);text-align:center;pointer-events:none;text-shadow:0 5px 20px #1b0b27}
+.chapter-knot{font:500 clamp(17px,2.2vw,29px) "Cormorant Garamond",serif;letter-spacing:.26em;color:#e9bc83;opacity:.8;margin:10px auto}
+.chapter-heading{font:700 clamp(33px,5.2vw,77px)/.93 "Cormorant Garamond",serif;letter-spacing:.14em;color:#ffefcd;text-transform:uppercase}
+.chapter-subtitle{font:italic clamp(17px,2vw,30px) "Cormorant Garamond",serif;color:#f1d2db;letter-spacing:.09em;margin:10px auto}
+.scene-label{display:none}
+.hud{top:clamp(175px,21vh,220px);bottom:auto;right:24px}
+.dialogue{left:clamp(195px,18vw,300px);right:clamp(26px,4vw,75px);bottom:clamp(21px,3vh,35px);max-height:45dvh;min-height:215px;padding:22px 26px 17px}
+.story{font-size:clamp(21px,2.25vw,31px);line-height:1.31}
+.statusline{font-size:13px}
+@media(max-width:900px){.chapter-display{left:155px;right:20px;top:32%}.chapter-heading{font-size:clamp(28px,5vw,52px)}.royal-header{width:64%}.dialogue{left:155px;right:16px}.royal-menu{left:9px;width:125px}}
+@media(max-width:650px){
+ .royal-header{top:14px;left:44%;width:66%}.royal-header .brand{font-size:clamp(22px,5.2vw,33px)}
+ .royal-clock{top:11px;right:8px}
+ .royal-menu{left:7px;top:90px;right:7px;width:auto;transform:none}
+ .chapter-display{top:35%;left:12px;right:12px;transform:translateY(-40%)}
+ .chapter-heading{font-size:clamp(33px,9vw,52px);letter-spacing:.06em}
+ .chapter-subtitle{font-size:20px}
+ .chapter-knot{font-size:16px;margin:6px}
+ .hud{top:171px;right:8px;max-width:100%}
+ .dialogue{left:7px;right:7px;bottom:8px;min-height:0;max-height:49dvh;padding:17px 13px 11px}
+ .story{font-size:clamp(18px,4.6vw,23px)}
+ .ornate-arch{opacity:.16}
+}
+@media(max-height:720px) and (min-width:651px){.chapter-display{top:28%}.dialogue{max-height:52dvh}.royal-header .brand{font-size:clamp(32px,4vw,52px)}}
 </style></head>
 <body><div class="shell"><header class="royal-header"><div class="brand"><small>✦ THE CHRONICLES OF ASTERIA ✦</small>THE VILLAINESS'S<br>SECOND LIFE <em>❧ ── ✦ ♛ ✦ ── ❧</em></div><div class="royal-clock"><small>⌛ BEFORE THE EXECUTION</small><strong id="countdown">DAY 01 / 90</strong></div></header>
 <main class="game" id="game"><div class="art" id="art"></div><div class="glitter"></div><div class="royal-ornament-layer" aria-hidden="true">
@@ -144,7 +189,7 @@ html,body{height:100%;overflow:hidden;background:#160e23}
  <div class="royal-bloom bloom-right"><span>✿</span><span>✦</span><span>❀</span><span>✿</span></div>
  <div class="filigree-corner corner-tl">❦</div><div class="filigree-corner corner-tr">❦</div>
  <div class="light-shower" id="lightShower"></div>
-</div><nav class="royal-menu" aria-label="Court menu"><button id="journal">▤ Journal</button><button id="save">♧ Save</button><button id="load">♢ Load</button><button id="affection">♡ Affection</button><button id="inventory">♧ Inventory</button><button id="music">♫ Music: Off</button><button id="fullscreen">⛶ Fullscreen</button></nav><div class="scene-label" id="location"></div><div class="hud"><span class="stat">♛ Reputation <b id="rep">0</b></span><span class="stat">✧ Influence <b id="inf">0</b></span><span class="stat">☾ Secrets <b id="sec">0</b></span></div><div class="characters" id="characters"></div>
+</div><nav class="royal-menu" aria-label="Court menu"><button id="journal">▤ Journal</button><button id="save">♧ Save</button><button id="load">♢ Load</button><button id="affection">♡ Affection</button><button id="inventory">♧ Inventory</button><button id="music">♫ Music: Off</button><button id="fullscreen">⛶ Fullscreen</button></nav><div class="scene-label" id="location"></div><div class="chapter-display" aria-hidden="true"><div class="chapter-knot">✧ ───── ♛ ───── ✧</div><div class="chapter-heading" id="sceneTitle">CHAPTER 01</div><div class="chapter-subtitle" id="sceneSub">The Vale Estate</div><div class="chapter-knot">✦ ✧ ✦</div></div><div class="hud"><span class="stat">♛ Reputation <b id="rep">0</b></span><span class="stat">✧ Influence <b id="inf">0</b></span><span class="stat">☾ Secrets <b id="sec">0</b></span></div><div class="characters" id="characters"></div>
 <div class="dialogue" id="dialogue"><span class="dialogue-crest" aria-hidden="true">♛</span><span class="name" id="speaker">Narrator</span><div class="story" id="story"></div><div class="choices" id="choices"></div><div class="statusline"><span id="chapter"></span><span class="badge" id="hint"></span></div></div><div class="toast" id="toast"></div>
 <div class="panel" id="startPanel"><div class="panel-inner"><div class="ornament">✦ ♛ ✦</div><h1>The Villainess's<br>Second Life</h1><p class="lead">You woke inside the romance novel you once read—three months before your character is condemned to death.</p><div class="lore">A crown prince who knows too much. A cursed duke with a dangerous reputation. A court mage whose smile hides a thousand secrets.<br><br>Your role: Lady Seraphina Vale, a Black noblewoman with locs, reborn as the story's doomed villainess. Your future? That depends on what you dare to change.</div><button class="cta" id="new">✦ BEGIN YOUR SECOND LIFE</button><button class="cta secondary" id="continue" style="display:none">◈ CONTINUE SAVED STORY</button><p class="small" style="text-align:center">Original romance-fantasy interactive visual novel · branching alliances, mysteries, romances and endings · works on mobile</p></div></div>
 <div class="panel hidden" id="journalPanel"><div class="panel-inner"><h2>Royal Journal</h2><div id="journalContent"></div><button class="cta secondary" id="closeJournal">Return to the story</button></div></div>
@@ -323,8 +368,10 @@ function render(){
  state.chapter=node.chapter;
  $('game').dataset.scene=node.bg;
  if(typeof node.onEnter==='function'&&!state.flags['visited_'+state.at]){state.flags['visited_'+state.at]=true;node.onEnter()}
- $('art').innerHTML=backdrop(node.bg)+'<img class="illustrated-bg" src="assets/backgrounds/'+node.bg+'.webp" alt="" onload="this.classList.add(\'loaded\')" onerror="this.remove()"/>';
- const cast=(node.who||[]).filter(id=>id!=='sera');$('characters').innerHTML=portraits('sera',true)+cast.slice(0,1).map(id=>portraits(id,false)).join('');
+ $('art').innerHTML='';
+ $('characters').innerHTML='';
+ $('sceneTitle').textContent='CHAPTER '+String(node.chapter).padStart(2,'0');
+ $('sceneSub').textContent=(backgrounds[node.bg]||backgrounds.hall)[0];
  $('speaker').textContent=node.speaker||'Narrator';
  $('story').textContent=node.text;
  $('choices').innerHTML='';
@@ -342,10 +389,10 @@ function render(){
 }
 function finish(key){
  const end=endings[key]||endings.endFree;
- const finalBg=key==='endMagic'?'tower':key==='endFree'?'garden':'hall';$('game').dataset.scene=finalBg;$('art').innerHTML=backdrop(finalBg)+'<img class="illustrated-bg" src="assets/backgrounds/'+finalBg+'.webp" alt="" onload="this.classList.add(\'loaded\')" onerror="this.remove()"/>';
+ const finalBg=key==='endMagic'?'tower':key==='endFree'?'garden':'hall';$('game').dataset.scene=finalBg;$('art').innerHTML='';$('sceneTitle').textContent='THE EPILOGUE';$('sceneSub').textContent='A New Destiny';
  const highest=Object.entries(state.affections).sort((a,b)=>b[1]-a[1])[0];
  const partner=highest[1]>=4?people[highest[0]]:null;
- $('characters').innerHTML=portraits('sera',true)+(key==='endRomance'&&partner?portraits(highest[0],true):'');
+ $('characters').innerHTML='';
  $('dialogue').style.display='none';
  $('endTitle').textContent=end.title;
  $('endText').textContent=end.text+(key==='endRomance'&&partner?'\n\n'+partner.name+' waits for you beneath the palace lanterns.':'');
