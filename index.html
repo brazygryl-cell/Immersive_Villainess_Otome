@@ -248,6 +248,20 @@ body,.game{background:#241d28}
  #startPanel .lore{font-size:12px}
 }
 @media(max-height:670px){.chapter-display{top:32%}.quick-toolbar{top:128px}.dialogue{max-height:53dvh}#startPanel .panel-inner{max-height:94dvh}}
+
+/* Start-screen-only fix: keep the game HUD out of the opening presentation. */
+.shell:has(#startPanel:not(.hidden)) > .royal-header{visibility:hidden!important}
+.game:has(#startPanel:not(.hidden)) > .quick-toolbar,
+.game:has(#startPanel:not(.hidden)) > .hud,
+.game:has(#startPanel:not(.hidden)) > .chapter-display,
+.game:has(#startPanel:not(.hidden)) > .dialogue{visibility:hidden!important}
+#startPanel{z-index:35;background:radial-gradient(ellipse at 50% 43%,#493447 0%,#291f30 48%,#191421 100%);backdrop-filter:none;padding:clamp(16px,3vh,40px)}
+#startPanel .panel-inner{max-height:min(90dvh,850px);width:min(650px,100%);border-radius:14px;background:linear-gradient(155deg,#52364e,#32243a 52%,#231c2f);box-shadow:0 0 0 3px #76566a75,0 20px 70px #0b0919aa,inset 0 0 0 4px #e6c08a22;padding:clamp(24px,3.8vw,48px)}
+#startPanel h1{margin:5px 0 22px;font-size:clamp(42px,5vw,67px);line-height:1.04}
+#startPanel .ornament{margin:0 0 15px}
+#startPanel .lead{margin:0 auto 22px;max-width:495px}
+#startPanel .lore{background:#211b2a90;border-color:#ba947475}
+@media(max-width:650px){#startPanel{padding:12px}#startPanel .panel-inner{max-height:94dvh;padding:23px 17px}#startPanel h1{font-size:clamp(39px,9.5vw,56px);margin:8px 0 15px}#startPanel .lead{margin-bottom:14px}}
 </style></head>
 <body><div class="shell"><header class="royal-header">
  <div class="header-actions"><button class="settings-trigger" id="menuToggle" type="button" aria-label="Open game settings" aria-expanded="false" aria-controls="settingsMenu">⚙ <span class="chevron">⌄</span></button>
