@@ -725,7 +725,7 @@ function personalizeScene(node,s){
   if(p.recall<=30)text+='\n\nThe original plot has become only a blur. You must proceed without its promises.';
  }
  const match=s.at.match(/^route_(cassian|elian|lucien|kael|aurelian)_(8|16)$/);
- if(match){const route=match[1],groups=match[2]==='8'?[0,1]:[2,3];for(const i of groups){for(const [flag,message] of WORLD_REACTIONS[route][i])if(s.flags[flag])text+='\\n\\n'+message;}}
+ if(match){const route=match[1],groups=match[2]==='8'?[0,1]:[2,3];for(const i of groups){for(const [flag,message] of WORLD_REACTIONS[route][i])if(s.flags[flag])text+='\n\n'+message;}}
  return text;
 }
 
