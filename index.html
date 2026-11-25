@@ -755,9 +755,9 @@ function personalizeScene(node,s){
   else if(p.compassion>=16)text+='\n\nThese are not disposable characters. Every small cruelty here lands on someone who has to live with it.';
  }
  if(/^route_(cassian|elian|lucien|kael|aurelian)_(0|8|16)$/.test(s.at)){
-  if(p.villainy>=38)text+='\\n\\nA quiet part of you has learned that a reputation for cruelty can be a weapon. You recognize the temptation before you say another word.';
-  else if(p.compassion>=34)text+='\\n\\nYou think of Tessa, of Mira, and of all the people whose stories did not appear in the novel. Love cannot make them unreal.';
-  if(p.recall<=25)text+='\\n\\nYou can barely remember the novel now. Whatever happens between you and this man must be judged on what you see, not a plot you used to know.';
+  if(p.villainy>=38)text+='\n\nA quiet part of you has learned that a reputation for cruelty can be a weapon. You recognize the temptation before you say another word.';
+  else if(p.compassion>=34)text+='\n\nYou think of Tessa, of Mira, and of all the people whose stories did not appear in the novel. Love cannot make them unreal.';
+  if(p.recall<=25)text+='\n\nYou can barely remember the novel now. Whatever happens between you and this man must be judged on what you see, not a plot you used to know.';
  }
  if(s.at==='routeCrossroads'){
   if(p.villainy>=26)text+='\n\nYou have learned that fear can open doors just as readily as kindness.';
@@ -793,6 +793,24 @@ function render(){
  $('dialogue').scrollTop=0;
  royalSceneArrival();
 }
+
+/* Ending prose reflects specific romantic choices, including whether a collar was ever accepted. */
+function personalizeEnding(key,base,s){
+ if(key==='end_elian_bad'&&!s.flags.duke_collar&&!s.flags.duke_locked_collar){
+  base=base.replace('The velvet collar rests against your throat, and ', 'His private crest rests on the bracelet at your wrist, and ');
+ }
+ if(key==='end_elian_horrible'&&!s.flags.duke_collar&&!s.flags.duke_locked_collar){
+  base=base.replace('The collar clasp has been replaced with a lock that needs his signet.', 'The iron gate has been fitted with a lock that opens only to his signet.');
+ }
+ const p=s.personality||{};
+ if(key.startsWith('end_')&&key.includes('_')&&s.route){
+  if((p.villainy||0)>=55)base+='\n\nThe people who once called you a villainess now speak your name with more caution. Some of that fear was earned by decisions you chose yourself.';
+  else if((p.compassion||0)>=55)base+='\n\nYou think of Tessa, Mira, and the people who trusted you. Their lives have continued beyond the romance that changed yours.';
+  if((p.recall||55)<=22)base+='\n\nYou can no longer remember every turn of the novel that first brought you here. This ending belongs to the woman you became, not the pages you once read.';
+ }
+ return base;
+}
+
 function finish(key){
  const end=endings[key]||endings.endFree;
  const finalBg=key.startsWith('end_elian')?'north':key.startsWith('end_lucien')||key.startsWith('end_aurelian')||key==='endMagic'?'tower':key.startsWith('end_kael')||key==='endFree'?'garden':'hall';$('game').dataset.scene=finalBg;$('art').innerHTML='';$('sceneTitle').textContent='THE EPILOGUE';$('sceneSub').textContent='A New Destiny';
@@ -801,7 +819,7 @@ function finish(key){
  $('characters').innerHTML='';
  $('dialogue').style.display='none';
  $('endTitle').textContent=end.title;
- $('endText').textContent=end.text+(key==='endRomance'&&partner?'\n\n'+partner.name+' waits for you beneath the palace lanterns.':'');
+ $('endText').textContent=personalizeEnding(key,end.text,state)+(key==='endRomance'&&partner?'\n\n'+partner.name+' waits for you beneath the palace lanterns.':'');
  $('endStats').textContent='Reputation '+state.rep+' ✦ Influence '+state.inf+' ✦ Secrets '+state.sec+' ✦ '+state.items.length+' clues ✦ '+state.turn+' decisions';
  $('endPanel').classList.remove('hidden');state.at=key;store();
 }
