@@ -564,13 +564,30 @@ for(const [route,entries] of Object.entries(WORLD_LORE)){
   for(const choice of preceding.choices)if(choice[1]===target)choice[1]=id;
  }
 }
+function routeChoiceCount(id,s,optionIndex){
+ return (s.history||[]).filter(h=>{
+  const match=/^route_([a-z]+)_(\\d+)$/.exec(h.from);
+  if(!match||match[1]!==id)return false;
+  return scenes[h.from]?.choices?.[optionIndex]?.[0]===h.choice;
+ }).length;
+}
 function decideRouteEnding(id,s){
- const t=s.traits||{},get=k=>t[k]||0;
- if(id==='elian')return (get('possession')>=85&&(get('autonomy')<=26||s.flags.duke_permanent_clasp))?'horrible':get('possession')>=36?'bad':'good';
- if(id==='cassian')return get('control')>=85&&((s.personality?.villainy||0)>=30||get('autonomy')<=22)?'horrible':get('control')>=36?'bad':'good';
+ const t=s.traits||{},p=s.personality||{},f=s.flags||{},get=k=>t[k]||0;
+ if(id==='elian')return get('possession')>=85&&(get('autonomy')<=26||f.duke_permanent_clasp)?'horrible':get('possession')>=36?'bad':'good';
+ if(id==='cassian'){
+  const repeatedAbuse=routeChoiceCount(id,s,2)>=9;
+  return get('control')>=85&&repeatedAbuse&&(p.villainy||0)>=55?'horrible':get('control')>=36?'bad':'good';
+ }
  if(id==='lucien')return get('experimentation')>=85&&get('autonomy')<=32?'horrible':get('experimentation')>=36?'bad':'good';
- if(id==='kael')return get('dependency')>=85&&((s.personality?.villainy||0)>=32||get('trust')<=0)?'horrible':get('dependency')>=37?'bad':'good';
- if(id==='aurelian')return s.flags.broke_choice_system&&get('autonomy')>=48?'good':get('authorship')>=85?'horrible':'bad';
+ if(id==='kael'){
+  const repeatedCoercion=routeChoiceCount(id,s,2)>=9;
+  return get('dependency')>=85&&repeatedCoercion&&((p.villainy||0)>=55||get('trust')<=0)?'horrible':get('dependency')>=37?'bad':'good';
+ }
+ if(id==='aurelian'){
+  const autonomyEarned=f.broke_choice_system&&get('autonomy')>=70&&get('restraint')>=35&&get('authorship')<=48&&routeChoiceCount(id,s,0)>=6;
+  if(autonomyEarned)return 'good';
+  return get('authorship')>=90&&(get('autonomy')<=55||(p.denial||0)>=30||(p.villainy||0)>=45)?'horrible':'bad';
+ }
  return 'bad';
 }
 for(const id of Object.keys(routeBlueprints)){
@@ -717,7 +734,7 @@ function renderSceneArt(node){
   img.onerror=()=>{img.remove();if(token===artworkState.token)game.classList.remove('has-scene-art','has-scene-cg');};
   img.src=src;art.appendChild(img);
  }
- if(cg||vis.hidePortraits)return;
+ if(cg||(vis.hidePortraits&&!vis.cg))return;
  for(const spec of vis.portraits||[]){
   const path=ART.portraits[spec.character]?.[spec.expression||'neutral'];
   const key='portrait:'+spec.character+':'+(spec.expression||'neutral');
