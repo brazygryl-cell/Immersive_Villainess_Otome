@@ -586,7 +586,7 @@ function decideRouteEnding(id,s){
  if(id==='aurelian'){
   const autonomyEarned=f.broke_choice_system&&get('autonomy')>=70&&get('restraint')>=35&&get('authorship')<=48&&routeChoiceCount(id,s,0)>=6;
   if(autonomyEarned)return 'good';
-  return get('authorship')>=90&&(get('autonomy')<=55||(p.denial||0)>=30||(p.villainy||0)>=45)?'horrible':'bad';
+  return get('authorship')>=90&&((get('autonomy')<=28&&(p.denial||0)>=25)||(p.villainy||0)>=60)?'horrible':'bad';
  }
  return 'bad';
 }
@@ -766,6 +766,7 @@ const WORLD_REACTIONS={"cassian":[[["cassian_petition_public","The petitioners n
 function personalizeScene(node,s){
  const p=s.personality||initial().personality;
  let text=node.text;
+ if(s.at==='wake'&&(s.flags?.authorCycle||0)>0)text+='\n\nSomewhere beyond the room, a pen scratches against paper. Someone who remembers you has already begun the next chapter.';
  if(['ch1_mira','audience','courtWhispers'].includes(s.at)){
   if(p.recall<=43)text+='\n\nYou try to remember how this scene unfolded in the book. The details will not come. You will have to judge the people in front of you.';
   else if(p.villainy>=13)text+='\n\nThe court seems eager to cast you as a villain. A dangerous thought occurs: perhaps you could make that role useful.';
@@ -805,7 +806,8 @@ function render(){
   b.addEventListener('click',()=>choose(c,i));$('choices').appendChild(b);
  });
  $('rep').textContent=state.rep;$('inf').textContent=state.inf;$('sec').textContent=state.sec;
- $('chapter').textContent='CHAPTER '+state.chapter+' — '+state.turn+' decisions made';$('countdown').textContent=state.at==='authorLoop'||state.at==='authorBreak'?'DAY -- / 90':'DAY '+String(node.chapter===1?1:Math.min(90,1+Math.floor(state.turn*.65))).padStart(2,'0')+' / 90';
+ $('chapter').textContent='CHAPTER '+state.chapter+' — '+state.turn+' decisions made';const chapterDays=[0,1,18,82,89,90,96,110,127,144,161,178,194,205];
+ $('countdown').textContent=state.at==='authorLoop'||state.at==='authorBreak'?'DAY --':node.chapter<=5?'DAY '+String(chapterDays[node.chapter]||1).padStart(2,'0')+' / 90':'DAY '+String(chapterDays[node.chapter]||205).padStart(3,'0');
  $('hint').textContent=state.items.length+' clues collected';
  $('dialogue').scrollTop=0;
  royalSceneArrival();
@@ -836,6 +838,7 @@ function finish(key){
  $('characters').innerHTML='';
  $('dialogue').style.display='none';
  $('endTitle').textContent=end.title;
+ $('replay').textContent=key==='end_aurelian_horrible'?'CONTINUE':'↺ REWRITE YOUR FATE';
  $('endText').textContent=personalizeEnding(key,end.text,state)+(key==='endRomance'&&partner?'\n\n'+partner.name+' waits for you beneath the palace lanterns.':'');
  $('endStats').textContent='Reputation '+state.rep+' ✦ Influence '+state.inf+' ✦ Secrets '+state.sec+' ✦ '+state.items.length+' clues ✦ '+state.turn+' decisions';
  $('endPanel').classList.remove('hidden');state.at=key;store();
@@ -852,7 +855,7 @@ function journal(){
 }
 function store(){try{localStorage.setItem(SAVE,JSON.stringify(state))}catch(e){}}
 function load(){try{const v=JSON.parse(localStorage.getItem(SAVE));if(v&&typeof v.at==='string'&&v.affections&&v.flags&&v.items){state={...initial(),...v,affections:{...initial().affections,...v.affections},traits:{...initial().traits,...(v.traits||{})},personality:{...initial().personality,...(v.personality||{})},flags:v.flags||{}};return true}}catch(e){}return false}
-function reset(){state=initial();$('dialogue').style.display='block';$('endPanel').classList.add('hidden');$('startPanel').classList.add('hidden');render();store()}
+function reset(retainAuthorCycle=false){const cycles=Number(state.flags?.authorCycle||0);state=initial();if(retainAuthorCycle)state.flags.authorCycle=Math.min(99,cycles+1);$('dialogue').style.display='block';$('endPanel').classList.add('hidden');$('startPanel').classList.add('hidden');render();store()}
 function startMusic(){
  if(musicLoop)return;
  try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
@@ -907,7 +910,7 @@ $('inventory').addEventListener('click',()=>courtPanel('inventory'));
 $('load').addEventListener('click',()=>courtPanel('load'));
 $('closeDetails').addEventListener('click',()=>$('detailsPanel').classList.add('hidden'));
 $('music').addEventListener('click',()=>{musicOn=!musicOn;$('music').textContent='♫ Music: '+(musicOn?'On':'Off');if(!musicOn){clearInterval(musicLoop);musicLoop=null}else startMusic()});
-$('new').addEventListener('click',reset);$('replay').addEventListener('click',reset);
+$('new').addEventListener('click',()=>reset());$('replay').addEventListener('click',()=>reset(state.at==='end_aurelian_horrible'));
 $('continue').addEventListener('click',()=>{$('startPanel').classList.add('hidden');if(endings[state.at])finish(state.at);else render()});
 $('save').addEventListener('click',()=>{store();notify('Your story has been saved')});
 $('journal').addEventListener('click',journal);$('closeJournal').addEventListener('click',()=>$('journalPanel').classList.add('hidden'));
