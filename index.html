@@ -566,7 +566,7 @@ for(const [route,entries] of Object.entries(WORLD_LORE)){
 }
 function routeChoiceCount(id,s,optionIndex){
  return (s.history||[]).filter(h=>{
-  const match=/^route_([a-z]+)_(\\d+)$/.exec(h.from);
+  const match=/^route_([a-z]+)_(\d+)$/.exec(h.from);
   if(!match||match[1]!==id)return false;
   return scenes[h.from]?.choices?.[optionIndex]?.[0]===h.choice;
  }).length;
