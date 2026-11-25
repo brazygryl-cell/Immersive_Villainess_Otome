@@ -854,7 +854,24 @@ function journal(){
  panel.classList.remove('hidden');
 }
 function store(){try{localStorage.setItem(SAVE,JSON.stringify(state))}catch(e){}}
-function load(){try{const v=JSON.parse(localStorage.getItem(SAVE));if(v&&typeof v.at==='string'&&v.affections&&v.flags&&v.items){state={...initial(),...v,affections:{...initial().affections,...v.affections},traits:{...initial().traits,...(v.traits||{})},personality:{...initial().personality,...(v.personality||{})},flags:v.flags||{}};return true}}catch(e){}return false}
+function load(){
+ try{
+  const v=JSON.parse(localStorage.getItem(SAVE));
+  if(!v||typeof v!=='object'||typeof v.at!=='string'||!(scenes[v.at]||endings[v.at])||
+     !Array.isArray(v.items)||!v.flags||typeof v.flags!=='object'||Array.isArray(v.flags)||
+     !v.affections||typeof v.affections!=='object')return false;
+  const base=initial();
+  state={...base,...v,items:v.items.filter(x=>typeof x==='string'&&Object.hasOwn(items,x)),
+   history:Array.isArray(v.history)?v.history.filter(x=>x&&typeof x.from==='string'&&typeof x.choice==='string'):[],
+   affections:{...base.affections,...v.affections},
+   traits:{...base.traits,...(v.traits&&typeof v.traits==='object'?v.traits:{})},
+   personality:{...base.personality,...(v.personality&&typeof v.personality==='object'?v.personality:{})},
+   flags:{...v.flags},
+   turn:Number.isFinite(v.turn)&&v.turn>=0?v.turn:0
+  };
+  return true;
+ }catch(e){return false}
+}
 function reset(retainAuthorCycle=false){const cycles=Number(state.flags?.authorCycle||0);state=initial();if(retainAuthorCycle)state.flags.authorCycle=Math.min(99,cycles+1);$('dialogue').style.display='block';$('endPanel').classList.add('hidden');$('startPanel').classList.add('hidden');render();store()}
 function startMusic(){
  if(musicLoop)return;
