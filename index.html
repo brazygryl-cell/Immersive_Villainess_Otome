@@ -896,7 +896,7 @@ function personalizeScene(node,s){
  if(depth){
   const route=depth[1],phase=depth[2]==='7'?'early':'late';
   for(const [flag,line] of CHARACTER_DEPTH_CALLBACKS[route][phase]){
-   if(s.flags[flag]){text+='\\n\\n'+line;break;}
+   if(s.flags[flag]){text+='\n\n'+line;break;}
   }
  }
  const match=s.at.match(/^route_(cassian|elian|lucien|kael|aurelian)_(8|16)$/);
