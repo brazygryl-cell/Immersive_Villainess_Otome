@@ -567,9 +567,9 @@ for(const [route,entries] of Object.entries(WORLD_LORE)){
 function decideRouteEnding(id,s){
  const t=s.traits||{},get=k=>t[k]||0;
  if(id==='elian')return (get('possession')>=85&&(get('autonomy')<=26||s.flags.duke_permanent_clasp))?'horrible':get('possession')>=36?'bad':'good';
- if(id==='cassian')return get('control')>=85?'horrible':get('control')>=36?'bad':'good';
+ if(id==='cassian')return get('control')>=85&&((s.personality?.villainy||0)>=30||get('autonomy')<=22)?'horrible':get('control')>=36?'bad':'good';
  if(id==='lucien')return get('experimentation')>=85&&get('autonomy')<=32?'horrible':get('experimentation')>=36?'bad':'good';
- if(id==='kael')return get('dependency')>=85?'horrible':get('dependency')>=37?'bad':'good';
+ if(id==='kael')return get('dependency')>=85&&((s.personality?.villainy||0)>=32||get('trust')<=0)?'horrible':get('dependency')>=37?'bad':'good';
  if(id==='aurelian')return s.flags.broke_choice_system&&get('autonomy')>=48?'good':get('authorship')>=85?'horrible':'bad';
  return 'bad';
 }
