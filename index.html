@@ -1109,6 +1109,147 @@ flowContinuity=function(text,s){
  return beforeBranchNarration(text,s)+extra
 };
 
+
+/* Foundation branches: private information belongs to the person who holds it.
+   Public evidence remains obtainable without personal loyalty. */
+function foundationNode(id,ch,bg,speaker,body,choices){scenes[id]={chapter:ch,bg,speaker,who:['sera'],text:body,choices}}
+function fc(label,to,e={},gate){return gate?[label,to,e,gate]:[label,to,e]}
+function ft(s,id){return socialScore(s,id,'trust')}
+function ff(s,id){return socialScore(s,id,'friendship')}
+function miraUnavailable(s){return (s.flags.mira_bargain&&!s.flags.repair_mira)||s.flags.mira_pressured||ft(s,'mira')<2}
+function miraFriend(s){return !miraUnavailable(s)&&ft(s,'mira')>=4&&ff(s,'mira')>=3}
+function tessaConfides(s){return ft(s,'tessa')>=4&&ff(s,'tessa')>=4&&(!s.flags.social_source_exposed||s.flags.repair_tessa)}
+function orinConfides(s){return ft(s,'orin')>=3&&!s.flags.orin_fear&&!s.flags.jumped_conclusion}
+function witnessAvailable(s){return !!(s.flags.foundation_footman||s.flags.foundation_orin_statement||(s.flags.orin_protected&&!s.flags.orin_fear&&!s.flags.jumped_conclusion)||s.flags.foundation_mira_authorized)}
+function redirectFoundation(id,to){for(const c of scenes[id].choices)c[1]=to}
+foundationNode('foundation_household',2,'chamber','Narrator','The following morning, Belden has set aside time to discuss the books. Tessa waits by the breakfast tray. You can speak to her before the steward arrives, or make your inquiry a matter of household business.',[
+fc('Accept Tessa’s offer to speak privately.','foundation_tessa',{},tessaConfides),
+fc('Arrange a formal meeting with Belden.','foundation_belden'),
+fc('Review the household inventory alone.','foundation_inventory')]);
+foundationNode('foundation_tessa',2,'chamber','Tessa','Tessa closes the door herself. “The footman who brought the account book to the library told me the voucher was already missing. He is frightened of being blamed.” She will not reveal his name until he agrees to speak.',[
+fc('Ask her to arrange a voluntary conversation with Belden present.','foundation_footman',{social:{tessa:[1,2,1]},flag:'foundation_tessa_tip'}),
+fc('Keep the observation in confidence without pursuing him.','c2_morning',{social:{tessa:[1,1,0]}})]);
+foundationNode('foundation_footman',2,'library','Narrator','The footman confirms the book was damaged when he received it. He cannot say who removed the voucher. Belden records the condition of the book, and the footman authorizes that limited account for an official inquiry. Tessa remains outside the record.',[
+fc('Preserve the authorized statement.','c2_morning',{flag:'foundation_footman',sec:1,social:{belden:[1,2,1]}})]);
+foundationNode('foundation_belden',2,'library','Belden','Belden provides the household inventory under your authority as Lady Vale. He makes clear that his duty to maintain the accounts does not extend to exposing servants without cause.',[
+fc('Request the relevant records and respect his conditions.','c2_morning',{social:{belden:[0,1,2]},flag:'foundation_formal_inventory'})]);
+foundationNode('foundation_inventory',2,'library','Narrator','You locate the entry in the inventory but cannot establish when the voucher disappeared. You record that limitation. An official document is useful even when it does not answer the question you most want answered.',[
+fc('Take my questions to the steward.','c2_morning',{personality:{resolve:2,recall:2}})]);
+redirectFoundation('act2Breath','foundation_household');
+/* Orin refuses personal observations after threats; the wheel itself remains examinable. */
+foundationNode('foundation_orin_public',2,'garden','Orin','Orin sets a supplier catalogue on the counter. “You can see the mark and the ordinary price list. I am not discussing my customers.” You copy the military fitting number. The dates, passengers and circumstances of the repair remain unconfirmed by him.',[
+fc('Pay for a copy of the public fitting catalogue.','c2_tessa',{flag:'foundation_public_stamp',personality:{resolve:2}}),
+fc('Leave with only the visible maker’s stamp.','c2_tessa',{flag:'foundation_public_stamp'})]);
+const market=scenes.c2_market;
+market.choices[2][1]='foundation_orin_public';
+market.choices[1][1]='foundation_orin_public';
+market.choices[0][2].flag='orin_respect';
+/* A separate private source is earned by a record of discretion, not a payment. */
+foundationNode('foundation_registry_source',2,'hall','Ilya','Ilya waits until her colleague has left. “The authorization was refiled under a different department code. That is not necessarily illegal, but the filing dates are worth comparing.” She shows you where the public amendment docket is kept. She will not give you the sealed contents.',[
+fc('Copy the public reference and keep her name private.','social_ilya_leave',{flag:'foundation_registry_reference',sec:1,social:{ilya:[1,2,1]}}),
+fc('Do not use her observation in the inquiry.','social_ilya_leave',{social:{ilya:[1,1,0]}})]);
+scenes.social_ilya_tip.choices[0][1]='foundation_registry_source';
+/* Mira's social path determines whether private family details are available. */
+foundationNode('foundation_mira_arrangements',3,'chamber','Narrator','A message concerning the hospital charity has arrived. You unfold it before making arrangements for the morning.',[
+fc('Accept Mira’s personal invitation to the market.','foundation_mira_invite',{},miraFriend),
+fc('Attend the scheduled committee meeting.','foundation_mira_business',{},s=>!miraUnavailable(s)&&!miraFriend(s)),
+fc('Read the secretary’s reply to my request.','foundation_mira_refusal',{},miraUnavailable)]);
+foundationNode('foundation_mira_invite',3,'garden','Mira','Mira has invited you to accompany her to the flower market. Her note mentions collecting a parcel of medicine and a stall that sells very good cakes. The investigation is not mentioned.',[
+fc('Meet her without bringing the case papers.','c3_miraSlow',{flag:'foundation_mira_invited',social:{mira:[1,1,0]}}),
+fc('Suggest another afternoon and consult the public register today.','foundation_charity_register',{social:{mira:[0,1,0]}})]);
+foundationNode('foundation_mira_business',3,'hall','Mira','Mira attends the charity committee with its secretary. She recognizes your interest in the missing supplies but does not offer details about her family. “We can compare the delivery dates,” she says. “I have authorization to discuss those.”',[
+fc('Keep the discussion professional.','foundation_charity_register',{flag:'foundation_mira_professional',social:{mira:[0,2,2]}}),
+fc('Ask whether she would consider meeting socially on another day.','foundation_mira_note',{social:{mira:[1,1,0]}})]);
+foundationNode('foundation_mira_refusal',3,'chamber','Narrator','The secretary writes that Mira will not attend a private meeting. Public delivery records are available at the charity office. The reasons for her absence are her own; you cannot demand access to her family circumstances.',[
+fc('Consult the public records instead.','foundation_charity_register',{flag:'foundation_mira_declined'}),
+fc('Send a note respecting her refusal.','foundation_mira_note',{social:{mira:[0,1,0]}}),
+fc('Send a retainer to inquire among the suppliers.','foundation_retainer',{flag:'foundation_retainer_used',personality:{villainy:2}})]);
+foundationNode('foundation_mira_note',3,'chamber','Narrator','Your note receives a brief acknowledgment. There is no new invitation. You leave the question open instead of insisting that she answer it today.',[
+fc('Continue through the public charity office.','foundation_charity_register')]);
+foundationNode('foundation_charity_register',3,'hall','Narrator','The secretary shows you delivery dates and public supplier names. Medical and household records remain closed. You have a useful lead without learning anything about Mira’s brother that she has not chosen to tell you.',[
+fc('Follow the supplier information at the market.','c3_marketDuty',{flag:'foundation_charity_dates',sec:1})]);
+foundationNode('foundation_retainer',3,'garden','Narrator','The retainer finds the names of two suppliers but obtains no signed statements. One merchant declines to discuss private customers with a representative of House Vale. You can follow the public information without claiming the rumors as evidence.',[
+fc('Separate the public names from unverified claims.','c3_marketDuty',{flag:'foundation_charity_dates'})]);
+redirectFoundation('act3Return','foundation_mira_arrangements');
+foundationNode('foundation_mira_followup',3,'hall','Narrator','The messenger’s list includes several households known to the charity. You can consult its records, accept personal assistance if it is offered, or continue with the household’s own investigation.',[
+fc('Accept Mira’s invitation to the conservatory.','act3Mira',{},miraFriend),
+fc('Arrange a committee meeting with the secretary.','foundation_committee',{},s=>!miraUnavailable(s)),
+fc('Continue through public records and Belden.','foundation_independent')]);
+foundationNode('foundation_committee',3,'hall','Narrator','Mira confirms the names of suppliers listed in the charity’s public accounts. She refuses to identify individual families receiving assistance. The secretary records the agreed scope of the inquiry.',[
+fc('Respect the limits of her cooperation.','act3List',{flag:'foundation_mira_committee',social:{mira:[0,2,2]}})]);
+foundationNode('foundation_independent',3,'library','Belden','Belden compares the names with employment registers and public summonses. He can establish that several people worked for offices connected to the route. He cannot establish what happened inside their homes.',[
+fc('Preserve the documented links.','act3List',{flag:'foundation_independent_list',social:{belden:[0,1,2]}})]);
+redirectFoundation('c3_watchWitness','foundation_mira_followup');
+foundationNode('foundation_witness_public',3,'hall','Narrator','The charity will not release Mira’s private account or arrange another meeting on your demand. A secretary can verify the dates of public summonses, however. Perrin explains that these establish a pattern of official contact, not the words of any private threat.',[
+fc('Preserve the public records and prepare for the masquerade.','c4_invitations',{flag:'social_mira_no_statement',sec:1})]);
+/* A witnessed statement is separate from permission to use it in public. */
+foundationNode('foundation_mira_permission',3,'hall','Mira','Perrin explains the difference between a confidential account and a statement the tribunal may actually hear. Mira reads the limited extract herself. She must be able to refuse without losing your assistance.',[
+fc('Ask whether she authorizes the limited extract.','foundation_mira_authorized',{},s=>ft(s,'mira')>=6&&!miraUnavailable(s)),
+fc('Keep her entire account confidential.','c4_invitations',{flag:'foundation_mira_confidential',social:{mira:[1,2,0]}})]);
+foundationNode('foundation_mira_authorized',3,'hall','Mira','“Only these sentences,” Mira says, touching the extract. Her brother’s medical circumstances and the names of uninvolved relatives are excluded. Perrin records the authorization. Mira has not agreed to appear personally.',[
+fc('Accept the exact limits.','c4_invitations',{flag:'foundation_mira_authorized',social:{mira:[1,2,1]}})]);
+redirectFoundation('testimonyScene','foundation_mira_permission');
+/* Social invitations lead to substantively different opportunities. */
+foundationNode('foundation_ball',4,'ballroom','Narrator','The side galleries open before the first dance. You have time for one conversation before the formal introductions resume.',[
+fc('Join Mira’s charity acquaintances.','foundation_ball_friends',{},miraFriend),
+fc('Speak with the registry official about the public docket.','foundation_ball_registry',{},s=>ft(s,'ilya')>=3&&!s.flags.social_source_exposed),
+fc('Approach the viscountess who has been circulating rumors.','foundation_ball_rival'),
+fc('Observe the receiving line without seeking an introduction.','foundation_ball_observe')]);
+foundationNode('foundation_ball_friends',4,'ballroom','Mira','Mira introduces you to two patronesses. One recognizes a supplier in the public accounts and offers a copy of the charity’s donation ledger. The other invites you to tea next week. Neither asks you to promise political support.',[
+fc('Accept both invitations without making commitments.','c4_protocol',{flag:'foundation_salon_contact',social:{mira:[2,2,1]},rep:1}),
+fc('Discuss the donation ledger only.','c4_protocol',{sec:1,social:{mira:[0,1,1]}})]);
+foundationNode('foundation_ball_registry',4,'ballroom','Narrator','The official verifies your public request number and the date it was received. He refuses to discuss the sealed permit at a reception. You now know which office can certify the application.',[
+fc('Record the verification.','c4_protocol',{flag:'foundation_docket',sec:1})]);
+foundationNode('foundation_ball_rival',4,'ballroom','Narrator','The viscountess repeats a rumor that you paid for private records. You ask which part she witnessed. She cannot identify a source and changes the subject when another guest approaches.',[
+fc('Leave the unsupported claim unanswered.','c4_protocol',{flag:'foundation_rumor_challenged'}),
+fc('Warn her that repeating unsupported claims may damage her standing.','c4_protocol',{flag:'foundation_rival_warning',inf:1,personality:{villainy:2}})]);
+foundationNode('foundation_ball_observe',4,'ballroom','Narrator','You watch the officials move between the receiving line and the side galleries. You recognize the office responsible for the announcements. You have no private information, but you know where a public official can be found.',[
+fc('Return to the receiving line.','c4_protocol',{flag:'foundation_officials_observed'})]);
+redirectFoundation('c4_gate','foundation_ball');
+/* Tribunal preparation uses the evidence actually obtained. */
+foundationNode('foundation_trial_documents',5,'trial','Perrin','Perrin obtains certified copies of the accepted requests. She marks the dates and the office responsible for each authorization. The case will concern the legitimacy of your inquiry rather than assumptions about the passenger.',[
+fc('Lead with the documentary record.','evidence',{flag:'defense_documents'})]);
+foundationNode('foundation_trial_witnesses',5,'trial','Perrin','Perrin prepares only statements whose authors have consented to their use. She checks each authorization separately. No private family history will be introduced merely because it might be persuasive.',[
+fc('Present the authorized statements.','allies',{flag:'defense_witnesses'})]);
+foundationNode('foundation_trial_authority',5,'trial','Perrin','Perrin marks the relevant requirements in the tribunal charter. The challenge concerns the authority for admitting the sealed indictment. You need not rely on a nobleman’s personal intervention.',[
+fc('Proceed with the procedural challenge.','duel',{flag:'defense_jurisdiction'})]);
+scenes.c5_choiceOfDefense.choices[0][1]='foundation_trial_documents';
+scenes.c5_choiceOfDefense.choices[1][1]='foundation_trial_witnesses';
+scenes.c5_choiceOfDefense.choices[1][3]=witnessAvailable;
+scenes.c5_choiceOfDefense.choices[2][1]='foundation_trial_authority';
+/* Apply relationship effects where earlier scenes only changed personality. */
+for(const [id,ds] of Object.entries({c3_miraSlow:[{mira:[2,2,1]},{mira:[1,2,2]},{mira:[-2,-3,-1]}],c4_protocol:[{mira:[1,2,0]},{},{mira:[0,-1,-1]}],c5_tessaVisit:[{tessa:[2,2,1]},{tessa:[1,1,2]},{tessa:[-2,-3,-1]}],c3_kaelTerms:[{sefa:[0,1,2]},{sefa:[2,2,1]},{sefa:[-1,-2,-1]}]})){
+scenes[id].choices.forEach((c,i)=>{c[2].social={...(c[2].social||{}),...ds[i]}})}
+/* Preserve exact prior choice labels for saves; vary the route and available options. */
+const beforeFoundationChoices=storyChoices;
+storyChoices=function(node,s){let a=beforeFoundationChoices(node,s);
+ if(s.at==='foundation_household'||s.at==='foundation_mira_arrangements'||s.at==='foundation_mira_followup'||s.at==='foundation_ball'||s.at==='foundation_mira_permission'||s.at==='c5_choiceOfDefense')a=a.filter(c=>!c[3]||c[3](s));
+ if(s.at==='investigate'&&miraUnavailable(s)){a=a.filter(c=>c!==node.choices[1]);a.push(fc('Use the charity’s public witness records instead.','foundation_witness_public',{}));}
+ if(s.at==='c4_protocol'&&miraUnavailable(s))a=a.filter(c=>c!==node.choices[0]);
+ if(s.at==='c4_waiting'&&miraUnavailable(s))a=a.filter(c=>c!==node.choices[0]);
+ if(s.at==='act5Defense'&&!witnessAvailable(s))a=a.filter(c=>c!==node.choices[1]);
+ return a
+};
+const beforeFoundationNarration=flowContinuity;
+flowContinuity=function(text,s){const at=s.at,f=s.flags||{};
+ if(at==='ch1_confidants'&&ft(s,'tessa')<2)text='Tessa lists your aunt’s regular letters and the household officers. Her account is accurate and impersonal. When you ask about friends, she suggests consulting the invitation book. She returns to preparing your gown.';
+ if(at==='act2Breath')text='The palace doors close behind you. Only then do you notice how stiffly you have been holding your shoulders. Tessa waits beside the carriage with water. '+(tessaConfides(s)?'“You can stop pretending for a moment, my lady,” she says.':'She asks whether you wish to return directly to the estate.')+'\n\nYou are tired enough to welcome the journey home.';
+ if(at==='c2_belden'&&f.hide_book)text=text.replace('He studies the account book you set before him.','He asks to see the ledger. You decide which pages to disclose before he can begin.');
+ if(at==='c2_strategy'&&f.foundation_public_stamp)text=text.replace('one credible witness, a repaired wheel','a publicly identified wheel fitting');
+ if(at==='c2_north'&&f.foundation_public_stamp)text=text.replace('You return to Orin. He lends you a catalogue of fittings, then spends an afternoon showing you the differences between civilian and military wheel stamps.','You compare the publicly available fitting catalogue with the stamp. No private account from the workshop is available.');
+ if(at==='c2_tessa'&&!tessaConfides(s))text='Tessa delivers supper and waits for instructions. Your notes establish the connection between the wheel fitting and the household receipt. They do not establish who was inside the carriage. You need a lawful way to inspect the transport register.';
+ if(at==='act3Return'&&miraUnavailable(s))text=text.replace('Mira agreed to meet tomorrow','a reply from the charity office is expected tomorrow');
+ if(at==='act3List'&&!flowSeen(s,'act3Mira'))text=text.replace('after the tea with Mira','after the latest inquiry');
+ if(at==='c4_protocol'&&miraUnavailable(s))text=text.replace("Mira witnesses the exchange but doesn't intervene. Later, as she passes, she murmurs the correct title without drawing attention to your mistake.",'Mira continues toward the charity delegation. You consult the printed order of introductions to discover the correct title.').replace("It's such a small kindness that your eyes sting.",'You make a note of the correction.');
+ if(at==='c4_waiting'&&miraUnavailable(s))text=text.replace('Mira passes you on her way out of the hall. She notices how tightly you are holding the edge of the table.\n\n“Are you unwell?”','Mira leaves with the charity delegation. A palace attendant notices how tightly you are holding the edge of the table and asks whether you require water.');
+ if(at==='evidence'){const lead=f.picked_tower?'The Tower’s formal examination request establishes why you submitted a disputed seal for authentication.':f.picked_north?'The Northern supply office’s witness request establishes why you investigated the convoy’s wheel stamp.':'The audit office’s accepted petition establishes why you examined the disputed transport charge.';text=text.replace('The first petition was rejected. The second was accepted. The ledger discrepancy led to an authorized inquiry, and the sequence is documented in the offices that processed it.',lead+' The relevant office has documented the sequence.');}
+ if(at==='allies'){const details=[];if(f.orin_protected&&!f.orin_fear&&!f.jumped_conclusion)details.push('Orin supplies a limited signed account of the repaired wheel.');if(f.foundation_footman)details.push('Belden submits the authorized household statement concerning the missing voucher.');if(f.foundation_mira_authorized)details.push('Perrin reads the exact extract Mira authorized, excluding her family’s private circumstances.');text='Perrin presents the authorized statements.\n\n'+(details.length?details.join(' '):'The clerk reads the available public documents. No private witness is represented as consenting.')+'\n\nThe prosecutor objects that the passenger’s identity is still unknown. Perrin agrees. A lawful investigation is not, by itself, treason.';}
+ if(at==='duel'&&!f.picked_north)text=text.replace('Elian is present, but he does not step in to fight your battle.','The officers remain at their assigned posts. Nobody is invited to fight your battle.');
+ if(at==='capital_salon'&&f.foundation_salon_contact)text+='\n\nOne of the patronesses recognizes you from the masquerade. She introduces you to another committee member without requiring a royal introduction.';
+ if(at==='capital_budget'&&f.foundation_registry_reference&&!f.social_source_exposed)text+='\n\nThe old amendment reference Ilya shared gives you a specific docket to request.';
+ return beforeFoundationNarration(text,s)
+};
+
 function assignSceneVisuals(){
  for(const [id,node] of Object.entries(scenes)){
   if(node.visuals)continue;
