@@ -281,6 +281,13 @@ body,.game{background:#241d28}
 .scene-portrait.left{margin-right:auto}.scene-portrait.right{margin-left:auto}
 .game.has-scene-cg .chapter-display{opacity:.24}
 @media(max-width:650px){.game.has-character-art .characters{left:0;right:0;bottom:42%;height:39%}.scene-portrait{width:49vw}.game.has-scene-cg .chapter-display{opacity:.1}}
+/* Aurelian's edits are cosmetic and respect reduced motion. */
+.author-echo .chapter-heading{letter-spacing:.19em;text-shadow:1px 0 #a77d98,-1px 0 #776d9b}
+.author-rewrite .author-original{animation:author-original 1.8s forwards}
+.author-rewrite .author-replacement{animation:author-replacement 1.8s forwards}
+@keyframes author-original{0%,55%{opacity:1}56%,100%{opacity:0;position:absolute;pointer-events:none}}
+@keyframes author-replacement{0%,55%{opacity:0;position:absolute}56%,100%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.author-rewrite .author-original{display:none;animation:none}.author-rewrite .author-replacement{animation:none}}
 </style></head>
 <body><div class="shell"><header class="royal-header">
  <div class="header-actions"><button class="settings-trigger" id="menuToggle" type="button" aria-label="Open game settings" aria-expanded="false" aria-controls="settingsMenu">⚙ <span class="chevron">⌄</span></button>
@@ -2254,7 +2261,9 @@ const WORLD_REACTIONS={"cassian":[[["cassian_petition_public","The petitioners n
 function personalizeScene(node,s){
  const p=s.personality||initial().personality;
  let text=node.text+socialNarration(s)+marginNarration(s)+sarethNarration(s)+towerNarration(s)+northNarration(s)+capitalNarration(s);
- if(s.at==='wake'&&(s.flags?.authorCycle||0)>0)text+='\n\nSomewhere beyond the room, a pen scratches against paper. Someone who remembers you has already begun the next chapter.';
+ if(s.at==='wake'&&(s.flags?.authorCycle||0)>0)text+='\n\n'+(s.flags.authorCycle>1?'The room is familiar in a way that has nothing to do with the novel. Somewhere, someone is relieved to have you back.':'Somewhere beyond the room, a pen scratches against paper. Someone who remembers you has already begun the next chapter.');
+ if(s.at==='route_aurelian_0'&&s.flags.authorCycle)text+='\n\nAurelian looks at you for a little too long. “There you are.” He corrects himself. “Forgive me. I meant to say it is a pleasure to meet you.”';
+ if(s.at==='route_aurelian_8'&&s.flags.authorEcho?.refused)text+='\n\n“Last time you surprised me,” he murmurs. When you ask what he means, he smiles. “Nothing you need to remember.”';
  if(['ch1_mira','audience','courtWhispers'].includes(s.at)){
   if(p.recall<=43)text+='\n\nYou try to remember how this scene unfolded in the book. The details will not come. You will have to judge the people in front of you.';
   else if(p.villainy>=13)text+='\n\nThe court seems eager to cast you as a villain. A dangerous thought occurs: perhaps you could make that role useful.';
@@ -2322,6 +2331,25 @@ function relationshipCue(s){
 const beforeRelationshipCue=flowContinuity;
 flowContinuity=function(t,s){return beforeRelationshipCue(t,s)+relationshipCue(s);};
 
+/* Fictional interface distortion never disables actual settings, save or restart. */
+function authorInterface(s){
+ const loop=s.at==='authorLoop',broken=s.at==='authorBreak',active=s.route==='aurelian'&&(loop||broken||/^route_aurelian_(8|12|16|17|reckoning)$/.test(s.at));
+ const game=$('game');game.classList.toggle('author-echo',active&&!broken);
+ if(loop){
+  const n=s.flags.authorLoops||0;
+  $('chapter').textContent=n>=2?'CHAPTER 12 — REVISION '+n:'CHAPTER 12 — PLEASE CHOOSE';
+  $('hint').textContent=n>=2?'A line remains outside the margin.':'The page has been corrected.';
+  $('sceneSub').textContent=n>=2?'The Unfinished Page':'A Familiar Page';
+ }else if(broken){$('chapter').textContent='CHAPTER — UNWRITTEN';$('hint').textContent='The next line belongs to you.';}
+ else if(active&&(s.traits?.authorship||0)>=65){$('countdown').textContent='DAY '+(s.at.endsWith('_16')?'178 / 178':'—');$('hint').textContent='The record has been revised.';}
+}
+const beforeAuthorChoices=storyChoices;
+storyChoices=function(node,s){
+ const c=beforeAuthorChoices(node,s);
+ if(s.at!=='authorLoop')return c;
+ const n=s.flags.authorLoops||0;
+ return c.map((x,i)=>i===0||i===1?[n>=2?'Go home.':i===0?'Go home.':'Stay with him.',x[1],x[2],x[3]]:x);
+};
 function render(){
  socialEnsure(state);const node=scenes[state.at];if(!node){if(!endings[state.at])throw new Error('Unknown story destination: '+state.at);finish(state.at);return}
  state.chapter=node.chapter;
@@ -2340,11 +2368,13 @@ function render(){
   const disabled=c[3]&&!c[3](state);b.disabled=Boolean(disabled);
   b.innerHTML='<span class="num">'+(i+1)+'</span>'+c[0]+(disabled?'<span class="hint">'+(state.at==='routeCrossroads'?'Requires growing mutual interest':'Requires additional evidence or trust')+'</span>':'');
   b.addEventListener('click',()=>choose(c,i));$('choices').appendChild(b);
+  if(state.at==='authorLoop'&&i===1&&(state.flags.authorLoops||0)<2){b.classList.add('author-rewrite');const original=b.innerHTML;b.innerHTML=original.replace('Stay with him.','<span class="author-original">Stay with him.</span><span class="author-replacement">Go home.</span>');}
  });
  $('rep').textContent=state.rep;$('inf').textContent=state.inf;$('sec').textContent=state.sec;
  $('chapter').textContent='CHAPTER '+state.chapter+' — '+state.turn+' decisions made';const chapterDays=[0,1,18,82,89,90,96,110,127,144,161,178,194,205];
  $('countdown').textContent=state.at==='authorLoop'||state.at==='authorBreak'?'DAY --':node.chapter<=5?'DAY '+String(chapterDays[node.chapter]||1).padStart(2,'0')+' / 90':'DAY '+String(chapterDays[node.chapter]||205).padStart(3,'0');
  $('hint').textContent=state.items.length+' clues collected';
+ authorInterface(state);
  $('dialogue').scrollTop=0;
  royalSceneArrival();
 }
@@ -2386,6 +2416,7 @@ function personalizeEnding(key,base,s){
 }
 
 function finish(key){
+ $('game').classList.remove('author-echo','author-fracture');
  const end=endings[key]||endings.endFree;
  const finalBg=key.startsWith('end_elian')?'north':key.startsWith('end_lucien')||key.startsWith('end_aurelian')||key==='endMagic'?'tower':key.startsWith('end_kael')||key==='endFree'?'garden':'hall';$('game').dataset.scene=finalBg;$('art').innerHTML='';$('sceneTitle').textContent='THE EPILOGUE';$('sceneSub').textContent='A New Destiny';
  const highest=Object.entries(state.affections).sort((a,b)=>b[1]-a[1])[0];
@@ -2427,7 +2458,7 @@ function load(){
   return true;
  }catch(e){return false}
 }
-function reset(retainAuthorCycle=false){const cycles=Number(state.flags?.authorCycle||0);state=initial();state.social=socialBase();if(retainAuthorCycle)state.flags.authorCycle=Math.min(99,cycles+1);$('dialogue').style.display='block';$('endPanel').classList.add('hidden');$('startPanel').classList.add('hidden');render();store()}
+function reset(retainAuthorCycle=false){const cycles=Math.max(0,Number(state.flags?.authorCycle)||0),echo=retainAuthorCycle?{cycle:Math.min(99,cycles+1),refused:!!state.flags.broke_choice_system,choice:(state.history||[]).filter(h=>/^route_aurelian_\d+$/.test(h.from)).slice(-1)[0]?.choice||''}:null;state=initial();state.social=socialBase();if(echo){state.flags.authorCycle=echo.cycle;state.flags.authorEcho=echo;}$('dialogue').style.display='block';$('endPanel').classList.add('hidden');$('startPanel').classList.add('hidden');render();store()}
 function startMusic(){
  if(musicLoop)return;
  try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
