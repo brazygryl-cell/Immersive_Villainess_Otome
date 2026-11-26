@@ -836,11 +836,11 @@ const SOCIAL_CAST={tessa:['Tessa','Personal maid',2,1,3],mira:['Lady Mira','Cour
 const SOCIAL_RULES={
 ch1_maid:['tessa',[[1,1,0],[0,0,0],[-2,-1,-1]]],ch1_tessa:['tessa',[[1,1,0]]],ch1_rehearsal:['tessa',[[1,2,1],[0,0,0],[-1,-1,0]]],ch1_rumors:['tessa',[[1,2,0],[-1,-2,0]]],ch1_breakfast:['tessa',[[0,0,0],[2,1,0],[0,0,0]]],ch1_mira:['mira',[[2,2,1],[0,1,1],[-1,-1,0]]],courtWhispers:['tessa',[[1,1,0],[0,0,1],[0,0,0]]],c2_morning:['tessa',[[0,1,1],[1,1,0],[-1,-2,0]]],c2_belden:['belden',[[0,1,2],[1,2,1],[-1,-1,-1]]],c2_market:['orin',[[1,2,1],[0,1,1],[-2,-2,-1]]],c2_orin:['orin',[[1,2,1],[0,1,1],[-1,-2,-2]]],c2_ilya:['ilya',[[1,2,1],[0,1,2],[-1,-2,-1]]],c2_petition:['halden',[[1,2,2],[1,2,1],[-1,-1,-1]]],c2_mage_meeting:['neri',[[0,1,2],[2,2,1],[-1,-1,-1]]],c2_north:['rowan',[[1,2,2],[1,1,1],[-1,-1,-1]]],act3Mira:['mira',[[1,2,0],[1,0,0],[0,1,1]]],witnessRisk:['mira',[[1,2,1],[1,2,1],[-2,-3,-1]]],c3_miraWork:['mira',[[2,3,1],[1,3,2],[-2,-3,-1]]],c2_prince_meeting:['cassian',[[1,1,1],[0,1,2],[0,-1,0]]],princePrivate:['cassian',[[0,2,2],[1,2,1],[0,-1,0]]],mageIntro:['lucien',[[0,2,2],[1,1,1],[0,-1,0]]],dukeIntro:['elian',[[0,2,2],[1,1,1],[0,-1,-1]]]};
 function socialBase(){return Object.fromEntries(Object.entries(SOCIAL_CAST).map(([id,p])=>[id,{friendship:p[2],trust:p[3],respect:p[4],desire:0,met:false,memories:[]}]))}
-function socialEnsure(s){if(!s.social){s.social=socialBase();for(const h of s.history||[]){const n=scenes[h.from],i=n?.choices.findIndex(c=>c[0]===h.choice)??-1;if(i>=0)socialApply(s,h.from,i,n.choices[i][2]||{},h.choice)}}return s.social}
+function socialEnsure(s){if(!s.social){s.social=socialBase();for(const h of s.history||[]){const n=scenes[h.from],i=Number.isInteger(h.option)&&h.option>=0&&n?.choices[h.option]?h.option:(n?.choices.findIndex(c=>c[0]===h.choice)??-1);if(i>=0)socialApply(s,h.from,i,n.choices[i][2]||{},h.choice)}}return s.social}
 function socialApply(s,at,index,effect,label){const all=s.social||(s.social=socialBase()),rule=SOCIAL_RULES[at];const change=(id,d)=>{const p=all[id];if(!p)return;p.met=true;for(const [i,k] of ['friendship','trust','respect','desire'].entries())p[k]=Math.max(0,Math.min(10,p[k]+(d[i]||0)));if(Math.abs(d[1]||0)>=2){p.memories.push(label);p.memories=p.memories.slice(-8)}};if(rule&&rule[1][index])change(rule[0],rule[1][index]);if(effect.social)for(const [id,d] of Object.entries(effect.social))change(id,d);for(const id of Object.keys(s.affections||{}))if(Number(effect[id])>0)change(id,[0,effect.traits?.trust>0?1:0,effect.traits?.autonomy>0?1:0,/kiss|embrace|desire|intimate/i.test(label)?2:0])}
 function socialScore(s,id,k){return socialEnsure(s)[id]?.[k]||0}
 function socialLabel(v){return v>=9?'Deep':v>=7?'Strong':v>=5?'Established':v>=3?'Developing':v>=1?'Guarded':'Absent'}
-function socialJournal(root){const group=document.createElement('div');group.className='lore';const title=document.createElement('strong');title.textContent='Personal relationships';group.append(title);for(const [id,p] of Object.entries(socialEnsure(state))){if(!p.met&&id!=='tessa')continue;const row=document.createElement('div');row.className='lore';const name=document.createElement('strong');name.textContent=SOCIAL_CAST[id][0]+' — '+SOCIAL_CAST[id][1];row.append(name);const vals=document.createElement('p');vals.textContent='Friendship: '+socialLabel(p.friendship)+' · Trust: '+socialLabel(p.trust)+' · Respect: '+socialLabel(p.respect)+(id in state.affections?' · Desire: '+socialLabel(p.desire):'');row.append(vals);if(p.memories.length){const note=document.createElement('small');note.textContent='Remembered: '+p.memories.at(-1);row.append(note)}group.append(row)}root.append(group)}
+function socialJournal(root){const group=document.createElement('div');group.className='lore';const title=document.createElement('strong');title.textContent='Personal relationships';group.append(title);for(const [id,p] of Object.entries(socialEnsure(state))){if(!p.met&&id!=='tessa')continue;const row=document.createElement('div');row.className='lore';const name=document.createElement('strong');name.textContent=SOCIAL_CAST[id][0]+' — '+SOCIAL_CAST[id][1];row.append(name);const vals=document.createElement('p');vals.textContent='Friendship: '+socialLabel(p.friendship)+' · Trust: '+socialLabel(p.trust)+' · Respect: '+socialLabel(p.respect)+(id in state.affections?' · Desire: '+socialLabel(p.desire):'');row.append(vals);if(p.memories?.length){const note=document.createElement('small');note.textContent='Remembered: '+p.memories.at(-1);row.append(note)}group.append(row)}root.append(group)}
 function socialScene(id,chapter,bg,speaker,text,choices){scenes[id]={chapter,bg,speaker,who:['sera'],text,choices}}
 const oldTessa=scenes.c2_tessa;
 oldTessa.text=oldTessa.text.split('“There')[0].trim();
@@ -1524,7 +1524,7 @@ flowContinuity=function(text,s){
  if(f.tessa_departed&&['capital_morning','capital_vale','capital_house','north_future','routeCrossroads'].includes(at)){
  out=out.replace(/Tessa (is trying|asks|remarks|is delighted)/g,'Agnes $1');out+='\n\nAgnes now manages the Vale household’s personal arrangements. Tessa is no longer in your service.';
  }
- if(f.mira_correspondence&&['north_letters','sareth_evening','tower_evening','capital_morning'].includes(at))out+='\n\nA personal letter from Mira has arrived, quite unrelated to the investigation.';
+ if(f.mira_correspondence&&auditMira(s)&&['north_letters','sareth_evening','tower_evening','capital_morning'].includes(at))out+='\n\nA personal letter from Mira has arrived, quite unrelated to the investigation.';
  if(f.mira_open_friendship&&at==='routeCrossroads')out+='\n\nMira has left you an open invitation rather than a promise of regular correspondence.';
  return out
 };
@@ -2236,6 +2236,8 @@ function choose(choice,index){
  if(!node)return;
  const [label,next,effect={},requirement]=choice;
  if(requirement&&!requirement(state))return;
+ const currentChoices=storyChoices(node,state);
+ if(!currentChoices.some(c=>c[0]===label&&c[1]===next&&(!c[3]||c[3](state))))return;
  const availableCount=storyChoices(node,state).filter(c=>!c[3]||c[3](state)).length;
  const option=stableDecisionIndex(node,choice);socialEnsure(state);socialApply(state,state.at,option,effect,label);marginApply(state,effect);sarethApply(state,effect);towerApply(state,effect);
  modifyTraits(effect);
