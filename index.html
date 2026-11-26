@@ -2236,13 +2236,14 @@ function choose(choice,index){
  if(!node)return;
  const [label,next,effect={},requirement]=choice;
  if(requirement&&!requirement(state))return;
+ const availableCount=storyChoices(node,state).filter(c=>!c[3]||c[3](state)).length;
  const option=stableDecisionIndex(node,choice);socialEnsure(state);socialApply(state,state.at,option,effect,label);marginApply(state,effect);sarethApply(state,effect);towerApply(state,effect);
  modifyTraits(effect);
  if(state.at==='investigate'&&effect.flag?.startsWith('actual_evidence_')){for(const k of ['financial','human','magical']){delete state.flags['evidence_'+k];delete state.flags['actual_evidence_'+k]}const k=effect.flag.slice('actual_evidence_'.length);state.flags['evidence_'+k]=true;state.flags[effect.flag]=true;}
  for(const [key,val] of Object.entries(effect)){if(['traits','personality','flag','route','social','margin','sareth','tower'].includes(key))continue;if(key in state.affections)state.affections[key]+=val;else add(key,val)}
  state.history.push({from:state.at,choice:option>=0?node.choices[option][0]:label,option,displayChoice:label});
  if(state.at==='authorLoop'&&next==='authorLoop')state.flags.authorLoops=(state.flags.authorLoops||0)+1;
- if(node.choices.length>1)state.turn++;state.at=next.startsWith('end_')&&state.route?'end_'+state.route+'_'+decideRouteEnding(state.route,state):crossDestination(next,state);
+ if(availableCount>1)state.turn++;state.at=next.startsWith('end_')&&state.route?'end_'+state.route+'_'+decideRouteEnding(state.route,state):crossDestination(next,state);
  render();store();
 }
 
@@ -2292,9 +2293,10 @@ function render(){
  $('speaker').textContent=node.speaker||'Narrator';
  $('story').textContent=personalizeScene(node,state);
  $('choices').innerHTML='';
- storyChoices(node,state).forEach((c,i)=>{
-  const b=document.createElement('button');b.className='choice'+(node.choices.length%2===1&&i===node.choices.length-1?' wide':'');
-  const disabled=c[3]&&!c[3](state);if(state.at==='authorLoop'&&i>=2&&disabled)return;b.disabled=Boolean(disabled);
+ const visibleChoices=storyChoices(node,state).filter((c,i)=>!(state.at==='authorLoop'&&i>=2&&c[3]&&!c[3](state)));
+ visibleChoices.forEach((c,i)=>{
+  const b=document.createElement('button');b.className='choice'+(visibleChoices.length%2===1&&i===visibleChoices.length-1?' wide':'');
+  const disabled=c[3]&&!c[3](state);b.disabled=Boolean(disabled);
   b.innerHTML='<span class="num">'+(i+1)+'</span>'+c[0]+(disabled?'<span class="hint">'+(state.at==='routeCrossroads'?'Requires growing mutual interest':'Requires additional evidence or trust')+'</span>':'');
   b.addEventListener('click',()=>choose(c,i));$('choices').appendChild(b);
  });
@@ -2397,7 +2399,7 @@ function courtPanel(kind){
   const desc=document.createElement('p');desc.textContent='Return to your last saved decision.';content.appendChild(desc);
   const btn=document.createElement('button');btn.className='cta';btn.textContent='◈ Load saved progress';
   btn.addEventListener('click',()=>{
-   if(load()){$('detailsPanel').classList.add('hidden');$('startPanel').classList.add('hidden');$('dialogue').style.display='block';if(endings[state.at])finish(state.at);else render();notify('Your saved story has been restored')}
+   if(load()){$('detailsPanel').classList.add('hidden');$('startPanel').classList.add('hidden');$('endPanel').classList.add('hidden');$('dialogue').style.display='block';if(endings[state.at])finish(state.at);else render();notify('Your saved story has been restored')}
    else notify('No saved story was found')
   });content.appendChild(btn);
  }
@@ -2426,7 +2428,7 @@ $('continue').addEventListener('click',()=>{$('startPanel').classList.add('hidde
 $('save').addEventListener('click',()=>{store();notify('Your story has been saved')});
 $('journal').addEventListener('click',journal);$('closeJournal').addEventListener('click',()=>$('journalPanel').classList.add('hidden'));
 $('fullscreen').addEventListener('click',()=>{if(document.fullscreenElement)document.exitFullscreen();else $('game').requestFullscreen?.()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('journalPanel').classList.add('hidden');$('detailsPanel').classList.add('hidden');setSettingsOpen(false)}if(!/^[1-9]$/.test(e.key)||!$('journalPanel').classList.contains('hidden')||!$('startPanel').classList.contains('hidden'))return;const b=$('choices').children[Number(e.key)-1];if(b&&!b.disabled)b.click()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('journalPanel').classList.add('hidden');$('detailsPanel').classList.add('hidden');setSettingsOpen(false)}if(!/^[1-9]$/.test(e.key)||!$('journalPanel').classList.contains('hidden')||!$('startPanel').classList.contains('hidden')||!$('detailsPanel').classList.contains('hidden')||!$('endPanel').classList.contains('hidden')||!$('settingsMenu').hidden)return;const b=$('choices').children[Number(e.key)-1];if(b&&!b.disabled)b.click()});
 if(load())$('continue').style.display='block';
 })();
 </script></body></html>
