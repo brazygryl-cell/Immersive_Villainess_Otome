@@ -1670,6 +1670,91 @@ flowContinuity=function(text,s){
  return out
 };
 
+
+/* Continuity audit: check facts actually established, preserve original choice identity,
+   and remove legacy narration that assumed every optional encounter occurred. */
+function auditMira(s){return !miraUnavailable(s)&&!s.flags.mira_erased&&(!s.flags.foundation_mira_declined||s.flags.mira_personal_bond||s.flags.repair_mira)&&!s.flags.mira_visit_refused}
+crossMira=auditMira;
+function auditGate(id,to,p){const n=scenes[id],c=n?.choices.find(c=>c[1]===to);if(!c)throw Error('Audit gate '+id+' '+to);const old=c[3];c[3]=s=>(!old||old(s))&&p(s)}
+auditGate('capital_grain','capital_grain_relief',auditMira);
+auditGate('capital_grain','capital_grain_registry',s=>!s.flags.capital_ilya_exposed&&!s.flags.social_source_exposed);
+auditGate('social_ilya_exit','social_ilya_tip',s=>!s.flags.queue_bribe);
+auditGate('capital_budget','capital_budget_orienne',s=>!s.flags.capital_orienne_pressure&&(!pastChoice(s,'route_cassian_3',2)||s.flags.repair_orienne));
+scenes.route_elian_6.choices[2][2].flag='mira_visit_refused';
+scenes.route_aurelian_7.choices[2][2].flag='mira_erased';
+scenes.cross_north_festival.choices[1][2].flag='cross_festival_stay';
+scenes.intimate_elian_13_0.choices[1][2].flag='cross_festival_stay';
+scenes.intimate_elian_13_0.choices[2][2].flag='cross_festival_stay';
+scenes.cross_kael_public_letter.choices.forEach((c,i)=>{c[1]='depth_kael_late';c[2].kael=2});
+scenes.cross_north_public_visit.choices[0][2].elian=2;
+scenes.cross_north_public_visit.choices[1][2].elian=2;
+scenes.cross_north_public_visit.choices[2][2].elian=2;
+scenes.cross_aurelian_discrepancy.choices.forEach(c=>c[2].aurelian=2);
+scenes.cross_aurelian_discrepancy.choices[2][2].flag='cross_public_erasure';
+/* Explicit response to a public journey decision, rather than contradicting an earlier cancellation. */
+const auditFestival={chapter:10,bg:'north',who:['sera'],speaker:'Elian',text:'Elian finds you on the terrace. You have decided not to travel this spring. He looks relieved, but the conversation turns to whether the decision belongs to you or to his fear of separation. He admits he would prefer to prevent every future departure. The road beyond the gates remains open.',choices:scenes.intimate_elian_13_1.choices};
+scenes.audit_north_stay=auditFestival;
+const auditDestBefore=crossDestination;
+crossDestination=function(to,s){
+ if(to==='intimate_elian_13_1'&&s.flags.cross_festival_stay)return 'audit_north_stay';
+ return auditDestBefore(to,s)
+};
+/* Preserve branch flags and original choice indices when adapting text/effects. */
+const auditChoicesBefore=storyChoices;
+storyChoices=function(node,s){
+ let a=auditChoicesBefore(node,s);
+ if(s.at==='investigate'&&s.flags.evidence_financial)a=a.filter(c=>c[1]!=='observatoryCost'||s.flags.picked_tower);
+ if(s.at==='investigate'&&s.flags.evidence_magical)a=a.filter(c=>c[1]!=='treasuryTrap'||s.flags.picked_court);
+ if(s.at==='investigate'&&!a.some(c=>!c[3]||c[3](s)))a=node.choices.slice();
+ if(s.at==='capital_future'&&s.flags.cross_faction_relinquished)a=a.filter(c=>c[1]!=='capital_future_patronage'||arcTrust(s,'celeste')>=4);
+ if(s.at==='margin_last'&&s.flags.cross_custody_ended)a=a.filter(c=>c[1]!=='margin_last_copy'||arcTrust(s,'archivist')>=5);
+ if(s.at==='north_letters'&&s.flags.mira_visit_refused)a=a.filter(c=>c[1]!=='north_letters_reply');
+ return a
+};
+/* Explicit source claims are replaced when the evidence was unavailable. */
+const auditNarrationBefore=flowContinuity;
+flowContinuity=function(text,s){
+ let out=auditNarrationBefore(text,s);const at=s.at,f=s.flags;
+ const replace=(a,b)=>{out=out.replace(a,b)};
+ if(f.foundation_public_stamp){
+ if(at==='c2_ilya')replace("You've got a household receipt and a wheelmaker's recollection","You've got a household receipt and a publicly identified wheel fitting");
+ if(at==='c2_queue')replace('on the day Orin remembered','on the date recorded in the household receipt');
+ if(at==='c2_strategy')replace('one credible witness, a repaired wheel','a publicly identified fitting');
+ if(at==='c5_counsel')replace('the way Ilya and Orin did weeks before','the way the registry procedures required');
+ }
+ if(at==='observatoryCost'&&!f.picked_tower)replace('Neri arranges a second magical examination','Neri arranges a formal magical examination');
+ if(at==='c4_staff'&&!flowSeen(s,'witnessRisk'))replace("and Mira's careful question: will you help me if I say no?","and the limits placed on access to private accounts.");
+ if(at==='c5_counsel'&&!flowSeen(s,'testimonyScene'))replace('When you mention Mira, Perrin asks whether Mira agreed to testify.\n\nYou pause.\n\n“Then we mustn’t pretend she did,” Perrin says.'.replace('mustn’t',"mustn't"),'Perrin checks which witnesses, if any, authorized their statements. She excludes all personal information whose use was not authorized.');
+ if(at==='c5_choiceOfDefense'&&!witnessAvailable(s))replace('You could call willing witnesses, if they are prepared to speak. Mira cannot be made to testify merely because her story might help you.','No private witness has authorized a usable statement. Your argument must rely on documents or the tribunal charter.');
+ if(at==='capital_budget'&&(f.social_source_exposed||f.capital_ilya_exposed))replace('Ilya has identified a related transfer in the registry.','The public treasury schedule identifies a related transfer. Ilya has declined private assistance.');
+ if(at==='capital_regency'&&pastChoice(s,'route_cassian_7',2))replace('Cassian has asked you to help, not to produce a miracle.','Cassian has not accepted the proposed seizure. The council remains the practical forum for settling the succession.');
+ if(at==='route_cassian_7'&&(flowCold(s)||pastChoice(s,'route_cassian_5',2)))replace("You are one of the few people who tells him things he doesn't wish to hear.","He has asked that you hear the legal implications before either of you settles on a course.");
+ if(at==='route_cassian_9')replace('The crown has been placed beside the papers, its gold reflecting the candlelight.','His signet rests beside the papers, its gold reflecting the candlelight.');
+ if(at==='route_cassian_9')replace('Without it he looks younger and startlingly ordinary.','Asleep, he looks younger and startlingly ordinary.');
+ if(at==='route_cassian_12')replace('the charter that is signed tomorrow','the proposed consort’s charter');
+ if(at==='capital_grain'){
+ if(f.capital_ilya_exposed||f.social_source_exposed)replace('Ilya has the registry extract.','The public registry contains an extract.');
+ if(!auditMira(s))replace('Mira offers to organize a collection with her acquaintances.','The charity accepts public donations through its ordinary office.');
+ }
+ if(at==='capital_budget_end'&&!f.capital_budget_record)out='The budget remains before the council. You have left its preparation to other advisers; the outcome will depend on their work.';
+ if(at==='route_elian_6'&&f.tessa_departed)replace('letters from Tessa','a household update from Belden');
+ if(at==='route_elian_9'){
+ if(!auditMira(s))replace("You recognize Mira's handwriting.","You recognize the southern charity’s seal.");
+ if(f.tessa_departed||f.tessa_professional)replace('Only recently you answered Mira and Tessa through the ordinary post.','Only recently you used the ordinary post for your own correspondence.');
+ }
+ if(at==='route_elian_14'&&f.cross_festival_stay){out=out.replace('You could leave for the spring festival today.','The carriage is available if you reconsider your decision not to attend the festival.');}
+ if(at==='north_assembly'&&!crossMaren(s))replace('Maren brings the fuel receipts.','The acting housekeeper brings the fuel receipts.');
+ if(at==='route_elian_17'&&f.north_correspondence&&!auditMira(s))replace('A fresh letter from Mira waits on your desk.','The ordinary household correspondence waits on your desk.');
+ if(at==='route_aurelian_7'&&!flowSeen(s,'c3_miraSlow'))replace("You think of Mira's trembling hands at the market, the medicine she bought for her brother, the moment she corrected your title in the ballroom without embarrassing you.","You think of the conversations you actually shared and the choices she made for herself.");
+ if(at==='route_aurelian_7'&&!miraFriend(s)&&!f.mira_personal_bond)replace('“She is my friend.”','“Her life belongs to her.”');
+ if(at==='route_aurelian_17')replace('You see the same command appear twice, in two identical places.','You see the same command repeated in identical rows.');
+ if(at==='margin_last_alone'&&f.margin_defer)out='Aurelian folds the statement he has written for you. The page bears the words he believes you would have chosen. No independent witness has confirmed that they are yours.';
+ if(at==='dynamic_kael_private'&&f.sareth_room)replace('The courtyard smells of rosemary; two neighbors stop by with oranges.','You eat in the shared courtyard of the lodging house; a neighbor stops by with oranges.');
+ if(at==='sareth_future'&&f.sareth_home_separate)replace('Your household agreement leaves room for work and savings in your own name.','Your separate lodging and accounts leave room for work and savings in your own name.');
+ return out
+};
+/* Eliminate hidden-trait spoilers and keep only genuine decisions in the counter. */
+
 function assignSceneVisuals(){
  for(const [id,node] of Object.entries(scenes)){
   if(node.visuals)continue;
@@ -1732,7 +1817,7 @@ function choose(choice,index){
  for(const [key,val] of Object.entries(effect)){if(['traits','personality','flag','route','social','margin','sareth','tower'].includes(key))continue;if(key in state.affections)state.affections[key]+=val;else add(key,val)}
  state.history.push({from:state.at,choice:label});
  if(state.at==='authorLoop'&&next==='authorLoop')state.flags.authorLoops=(state.flags.authorLoops||0)+1;
- state.turn++;state.at=next.startsWith('end_')&&state.route?'end_'+state.route+'_'+decideRouteEnding(state.route,state):crossDestination(next,state);
+ if(node.choices.length>1)state.turn++;state.at=next.startsWith('end_')&&state.route?'end_'+state.route+'_'+decideRouteEnding(state.route,state):crossDestination(next,state);
  render();store();
 }
 
@@ -1785,7 +1870,7 @@ function render(){
  storyChoices(node,state).forEach((c,i)=>{
   const b=document.createElement('button');b.className='choice'+(node.choices.length%2===1&&i===node.choices.length-1?' wide':'');
   const disabled=c[3]&&!c[3](state);if(state.at==='authorLoop'&&i>=2&&disabled)return;b.disabled=Boolean(disabled);
-  b.innerHTML='<span class="num">'+(i+1)+'</span>'+c[0]+(disabled?'<span class="hint">'+(state.at==='routeCrossroads'?'Requires Growing interest ('+ROMANCE_ENTRY_MINIMUM+' affection). Current: '+(state.affections[c[2].route]||0):'Requires additional evidence or trust')+'</span>':'');
+  b.innerHTML='<span class="num">'+(i+1)+'</span>'+c[0]+(disabled?'<span class="hint">'+(state.at==='routeCrossroads'?'Requires growing mutual interest':'Requires additional evidence or trust')+'</span>':'');
   b.addEventListener('click',()=>choose(c,i));$('choices').appendChild(b);
  });
  $('rep').textContent=state.rep;$('inf').textContent=state.inf;$('sec').textContent=state.sec;
