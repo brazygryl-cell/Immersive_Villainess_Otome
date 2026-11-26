@@ -1529,6 +1529,147 @@ flowContinuity=function(text,s){
  return out
 };
 
+
+/* Cross-branch continuity: a durable fact is not erased by a different scene module. */
+function crossMira(s){return !miraUnavailable(s)&&!s.flags.foundation_mira_declined||!!s.flags.mira_correspondence||!!s.flags.mira_open_friendship}
+function crossMaren(s){return !pastChoice(s,'route_elian_12',1)&&!pastChoice(s,'route_elian_12',2)}
+function crossTessa(s){return !s.flags.tessa_departed&&!s.flags.tessa_professional&&!s.flags.social_source_exposed}
+function crossRowan(s){return !s.flags.north_command_distance&&!s.flags.north_rowan_exposed&&(!pastChoice(s,'route_elian_7',2)||s.flags.repair_rowan||s.flags.north_command_liaison)}
+function crossNeri(s){return !s.flags.tower_dissent_withdrawn&&!s.flags.tower_leaked_minutes&&(!pastChoice(s,'route_lucien_2',2)||s.flags.repair_neri)}
+function crossCrew(s){return !s.flags.sareth_crew_separate&&!s.flags.sareth_refugees_exposed&&(!pastChoice(s,'route_kael_2',2)||s.flags.repair_crew||s.flags.sareth_crew_probation)}
+function crossVesper(s){return !s.flags.margin_vesper_private&&!s.flags.margin_review_excluded&&(!s.flags.margin_ignored||s.flags.margin_restored)&&arcTrust(s,'vesper')>=3}
+function crossGate(id,target,predicate){const n=scenes[id],c=n?.choices.find(c=>c[1]===target);if(!c)throw Error('Cross gate missing '+id+' -> '+target);const old=c[3];c[3]=s=>(!old||old(s))&&predicate(s)}
+for(const [id,to,p] of [
+ ['capital_morning','capital_mira',crossMira],['capital_evening','capital_cards',crossMira],['capital_evening','capital_tessa',crossTessa],['capital_complaint','capital_complaint_mira',crossMira],
+ ['north_assembly','north_assembly_refuge',crossMaren],['north_future','north_future_estate',s=>crossMaren(s)||s.flags.north_refuge_passed],
+ ['politics_elian','politics_elian_2',crossRowan],['dynamic_elian','dynamic_elian_confidence',crossRowan],
+ ['politics_lucien','politics_lucien_0',crossNeri],['tower_future','tower_future_partner',crossNeri],
+ ['politics_kael','politics_kael_2',crossCrew],['sareth_future','sareth_future_crew',crossCrew],
+ ['margin_last','margin_last_copy',s=>crossVesper(s)||arcTrust(s,'archivist')>=5],
+ ['margin_last','margin_last_witness',s=>!s.flags.margin_review_excluded]
+])crossGate(id,to,p);
+/* Replace phantom visits with different events and choices. */
+function crossNode(id,ch,bg,speaker,body,choices){scenes[id]={chapter:ch,bg,speaker,who:['sera'],text:body,choices}}
+crossNode('cross_north_public_visit',8,'north','Narrator','A delegation from the southern charity arrives to discuss winter supplies. Mira has not come. The representative carries an official account of shipments, not personal letters. Elian receives the delegation briefly, then asks the household to prepare its departure. You have the option of establishing an official channel that does not depend on anyone pretending to be your friend.',[
+ ['Request an ordinary correspondence channel for the charity.','cross_north_public_reply',{flag:'cross_charity_channel',social:{rowan:[0,1,1]}}],
+ ['Leave the matter to the supply officers.','depth_elian_late',{}],
+ ['Ask the delegation not to return without an appointment.','depth_elian_late',{traits:{possession:2}}]]);
+crossNode('cross_north_public_reply',8,'north','Narrator','The representative agrees to send the ordinary accounts through the assembly clerk. There is no promise of a private visit or personal confidence. You have created a useful professional connection on its own terms.',[['Continue.','depth_elian_late',{}]]);
+crossNode('cross_north_correspondence',8,'north','Narrator','Maren brings the outgoing post tray. You have the opportunity to write to Belden about the Vale estate and to anyone who has actually agreed to maintain contact. The letters are yours to send; a reply is not something you can demand.',[
+ ['Send Belden a practical household update.','north_letters_end',{flag:'north_correspondence',social:{belden:[0,1,1]},traits:{autonomy:2}}],
+ ['Write a personal letter to Mira.','north_letters_end',{flag:'north_correspondence',social:{mira:[1,1,0]},traits:{autonomy:2}},crossMira],
+ ['Keep a private journal instead.','north_letters_end',{personality:{recall:2}}]]);
+crossNode('cross_north_festival',10,'north','Narrator','The spring festival is announced in the southern gazette. The date is public; nobody has personally invited you. You could travel under your own arrangements, stay in the North, or discuss a shared visit with Elian. The choice concerns your plans, not an imaginary invitation.',[
+ ['Make my own travel arrangements and invite Elian to join me.','intimate_elian_13_1',{traits:{autonomy:3},flag:'cross_festival_self'}],
+ ['Stay in the North this spring.','intimate_elian_13_1',{flag:'cross_festival_stay'}],
+ ['Ask Elian to arrange a trip together.','intimate_elian_13_1',{social:{elian:[1,1,0]}}]]);
+crossNode('cross_kael_public_letter',8,'garden','Narrator','An official notice from Asteria arrives through the port office. The inquiry into foreign trade has reopened and the tribunal is accepting written submissions from people with relevant documents. There is no personal appeal from Mira. You can decide whether to engage with the inquiry through ordinary channels.',[
+ ['Send a limited account of what I personally know.','route_kael_7',{flag:'cross_asteria_submission',traits:{autonomy:2},personality:{resolve:2}}],
+ ['Decline to take part in the reopened inquiry.','route_kael_7',{}],
+ ['Ask Kael to leave the notice with my household papers.','route_kael_7',{traits:{dependency:1}}]]);
+crossNode('cross_aurelian_discrepancy',8,'blank','Narrator','A charity secretary sends a public correction to the record of your investigation. The dates in your journal no longer match the dates in the register. Mira has not visited you or entrusted you with her private recollections. Aurelian admits he changed the correspondence because he thought it would make you happier.',[
+ ['Demand restoration of the public record without intruding on anyone’s memories.','route_aurelian_8',{margin:{identity:2,memory:1},traits:{authorship:-2,autonomy:2},flag:'cross_public_restoration'}],
+ ['Leave the altered record alone and return to Aurelian.','route_aurelian_8',{margin:{interference:1},traits:{authorship:3}}],
+ ['Ask him to remove the entire inquiry from public memory.','route_aurelian_8',{margin:{interference:2,memory:-1},traits:{authorship:5},flag:'cross_public_erasure'}]]);
+/* A resolution creates a continuing choice, not a free upgrade to every institution. */
+crossNode('cross_cassian_ward_review',10,'hall','Orienne','The nurse has returned with the first monthly figures. The smaller ward has opened, but the night shift is still understaffed. Orienne asks you to decide with her whether to delay the next expansion or seek an additional donation. The joint appointment means that neither of you can promise an expenditure alone.',[
+ ['Agree on a revised budget and bring it to the board.','route_cassian_14',{flag:'cross_ward_budget',social:{orienne:[1,2,1]}}],
+ ['Ask the board to appoint another sponsor for the expansion.','route_cassian_14',{flag:'cross_ward_delegation'}]]);
+crossNode('cross_cassian_vote_review',10,'hall','Halden','The provincial agreement is due for its first review. The minister wants a favorable report before the figures are complete. Halden has brought the actual expenditures. You may preserve your negotiating role by reporting the documented progress, or relinquish the agreement rather than certify a result you cannot establish.',[
+ ['Submit the documented progress, including the unfinished work.','route_cassian_14',{flag:'cross_faction_reviewed',social:{halden:[0,2,1]}}],
+ ['Relinquish the negotiating role and allow another official to review it.','route_cassian_14',{flag:'cross_faction_relinquished'}]]);
+crossNode('cross_north_apprentice_review',10,'north','Ada','Two more families have asked about apprenticeship loans. Ada brings their letters rather than recommending an award herself. The first apprentice has begun repaying her modest advance. Your arrangement could become a small ongoing fund, or remain a single successful loan.',[
+ ['Create a limited fund with published repayment terms.','route_elian_15',{flag:'cross_apprentice_fund',social:{ada:[1,2,1]}}],
+ ['Keep the original loan separate and refer the new applicants to the assembly.','route_elian_15',{flag:'cross_apprentice_referral'}]]);
+crossNode('cross_tower_collaboration_review',11,'tower','Neri','The calibration study has produced a finding worth presenting. Neri asks you to review the draft with her. Your collaboration agreement grants shared credit for this work, not a right to her unrelated research. Lucien has offered an introduction to a senior journal editor, which neither of you needs to accept.',[
+ ['Submit the work with Neri and preserve the agreed division of credit.','route_lucien_16',{flag:'cross_neri_publication',social:{neri:[1,2,2]}}],
+ ['Let Neri present the study and retain my own technical notes.','route_lucien_16',{flag:'cross_neri_separate_credit'}]]);
+crossNode('cross_sareth_house_return',11,'garden','Kael','The courtyard wall has been repaired. Kael has returned from the market with a loaf of bread and a bill for the work. The house agreement you made earlier determines which expenses belong to you. He asks whether the arrangement still suits you, rather than treating the first decision as permanent.',[
+ ['Keep our existing arrangement and plan next month’s expenses.','route_kael_15',{flag:'cross_house_reviewed',social:{kael:[1,2,1]}}],
+ ['Review the arrangement after the next voyage, without changing ownership today.','route_kael_15',{flag:'cross_house_review_pending'}]]);
+crossNode('cross_margin_custody_review',11,'blank','Vesper','Vesper brings the page you entrusted to her. The ink has changed in one corner, but the duplicate in the Archive still contains the original words. She has not attempted to repair either version. She asks whether you want to renew the reciprocal agreement before the Keepers close the register.',[
+ ['Preserve both versions and renew our limited agreement.','margin_last',{flag:'cross_custody_renewed',margin:{memory:1,identity:1},social:{vesper:[1,2,1]}}],
+ ['Retrieve my own copy and end the agreement without altering her records.','margin_last',{flag:'cross_custody_ended'}]]);
+/* A scene with an unavailable person is redirected before its content renders.
+   The state change is applied in the choice handler, not to text after entry. */
+function crossDestination(to,s){
+ if(to==='route_elian_6'&&!crossMira(s))return 'cross_north_public_visit';
+ if(to==='intimate_elian_13_0'&&!crossMira(s))return 'cross_north_festival';
+ if(to==='route_kael_6'&&!crossMira(s))return 'cross_kael_public_letter';
+ if(to==='route_aurelian_7'&&!crossMira(s))return 'cross_aurelian_discrepancy';
+ if(to==='route_cassian_14'&&s.flags.orienne_joint_board&&!s.flags.cross_ward_budget&&!s.flags.cross_ward_delegation&&s.at!=='cross_cassian_ward_review')return 'cross_cassian_ward_review';
+ if(to==='route_cassian_14'&&s.flags.cassian_faction_kept&&!s.flags.cross_faction_reviewed&&!s.flags.cross_faction_relinquished&&s.at!=='cross_cassian_vote_review')return 'cross_cassian_vote_review';
+ if(to==='route_elian_15'&&s.flags.north_apprentice_fund&&!s.flags.cross_apprentice_fund&&!s.flags.cross_apprentice_referral&&s.at!=='cross_north_apprentice_review')return 'cross_north_apprentice_review';
+ if(to==='route_lucien_16'&&s.flags.tower_neri_collaboration&&!s.flags.cross_neri_publication&&!s.flags.cross_neri_separate_credit&&s.at!=='cross_tower_collaboration_review')return 'cross_tower_collaboration_review';
+ if(to==='route_kael_15'&&(s.flags.sareth_home_joint||s.flags.sareth_home_separate)&&!s.flags.cross_house_reviewed&&!s.flags.cross_house_review_pending&&s.at!=='cross_sareth_house_return')return 'cross_sareth_house_return';
+ if(to==='margin_last'&&s.flags.margin_vesper_custody&&!s.flags.cross_custody_renewed&&!s.flags.cross_custody_ended&&s.at!=='cross_margin_custody_review')return 'cross_margin_custody_review';
+ return to
+}
+const beforeCrossChoices=storyChoices;
+storyChoices=function(node,s){
+ let a=beforeCrossChoices(node,s);
+ if(s.at==='north_letters'&&(!crossTessa(s)||!crossMira(s))){
+ a=a.filter(c=>c[1]!=='north_letters_reply');a=[['Arrange my own correspondence.','cross_north_correspondence',{}],...a];
+ }
+ if(s.at==='tower_evening'&&!crossTessa(s))a=a.map(c=>c[1]==='tower_evening_end'?['Read alone and write in my journal.',c[1],{}]:c);
+ if(s.at==='capital_future'){
+ if(s.flags.cross_faction_relinquished)a=a.filter(c=>!c[0].startsWith('Maintain the recorded provincial agreement'));
+ if(s.flags.cross_ward_delegation)a=a.filter(c=>!c[0].startsWith('Continue the joint hospital board'));
+ }
+ if(s.at==='margin_last'&&s.flags.cross_custody_ended)a=a.filter(c=>!c[0].startsWith('Entrust my own statement to Vesper'));
+ if(s.at==='north_future'&&!crossMaren(s)&&!s.flags.north_refuge_passed)a=a.filter(c=>c[1]!=='north_future_estate');
+ if(s.at==='sareth_future'&&s.flags.sareth_crew_separate)a=a.filter(c=>c[1]!=='sareth_future_crew');
+ if(s.at.startsWith('cross_'))a=a.filter(c=>!c[3]||c[3](s));
+ return a
+};
+/* Continuity corrections for people who are still present in professional roles. */
+const beforeCrossNarration=flowContinuity;
+flowContinuity=function(text,s){
+ const at=s.at,f=s.flags;let out=beforeCrossNarration(text,s);
+ if(f.tessa_departed||f.tessa_professional){
+ const repl={
+ route_elian_0:["Tessa reads it and goes quiet.","Belden reads the notice and sets it aside."],
+ route_elian_6:["She has brought letters from Tessa and a bundle of drawings","She has brought a household update from Belden and a bundle of drawings"],
+ route_elian_9:["the letters from Tessa","the household correspondence from Belden"],
+ route_elian_14:["Mira waiting in the south and Tessa's letters on your desk","the people in the south and the household letters on your desk"],
+ intimate_elian_13_0:["and carries an enthusiastic postscript from Tessa, who has somehow added three pages of gossip","and includes the public festival programme"],
+ north_letters:["Tessa has included gossip about a dressmaker who apparently eloped with a baker.","Belden has enclosed a brief update on the household accounts."],
+ capital_evening:["Tessa wants to visit the dressmaker before the shops close","the dressmaker is accepting appointments before the shops close"],
+ capital_morning:["Tessa is trying to work out which palace staircases lead to the laundry without going through three security checkpoints.","The household staff are learning the palace's security procedures."],
+ capital_vale:["Tessa remarks that the palace has twelve kinds of silver spoon and nowhere sensible to put a wet umbrella.","The household has prepared an ordinary report on its expenses."],
+ capital_house:["Tessa asks which arrangement will determine who may read your correspondence.","The household office asks which arrangement will determine who may read your correspondence."],
+ capital_house_private:["Tessa is delighted that she can finally arrange your afternoons without consulting three different palace offices.","Your attendant can now arrange your afternoons without consulting three different palace offices."]
+ };
+ if(repl[at])out=out.replace(repl[at][0],repl[at][1]);
+ if(f.tessa_departed&&at==='capital_house_private')out=out.replace('Your attendant','Agnes');
+ }
+ if(!crossMira(s)){
+ const replacements={
+ capital_morning:["Mira has also sent a note inviting you to tea.","The charity's public schedule has been circulated."],
+ capital_evening:["Mira is hosting cards, ",""],
+ capital_complaint:["Mira asks whether you want her to speak to the women who know the dismissed servant.","The charity has made its public contact details available."],
+ north_letters:["Mira's visit has left a packet of letters on your desk.","A packet of ordinary correspondence has arrived."],
+ route_elian_9:["You recognize Mira's handwriting.","You recognize the southern charity's seal."],
+ route_elian_14:["You think of Mira waiting in the south and Tessa's letters on your desk.","You think of your own arrangements and the ordinary correspondence on your desk."],
+ route_elian_16:["You imagine Mira arriving after a long journey only to be told you were away.","You imagine a visitor arriving after a long journey only to be told you were away."],
+ route_aurelian_11:["You look at Mira, caught in the middle of a laugh.","You look at a guest caught in the middle of a laugh."]
+ };
+ if(replacements[at])out=out.replace(replacements[at][0],replacements[at][1]);
+ }
+ if(!crossMaren(s)){
+ if(at==='route_elian_13')out=out.replace("Maren has told you this is a chance to establish authority that does not depend entirely on Elian's affection.","The assembly clerk explains that this is an opportunity to establish a role independent of the duke.").replace("the figures you gathered with Maren","the public figures supplied by the clerk");
+ if(at==='north_assembly')out=out.replace('Maren has brought the refuge hall accounts;','The refuge hall accounts are available through the assembly clerk;');
+ if(at==='lore_elian_13')out=out.replace(/Housekeeper Maren brings/g,'The acting housekeeper brings').replace(/Maren is careful/g,'The acting housekeeper is careful').replace(/Maren lays/g,'The acting housekeeper lays');
+ if(at==='north_future_estate')out=out.replace(/Maren places/g,'The acting housekeeper places');
+ }
+ if(at==='lore_cassian_9'&&(f.capital_ilya_exposed||f.social_source_exposed))out=out.replace('A clerk named Ilya risks her position to tell you that the sealed grain shipments are being diverted away from northern villages.','A public discrepancy in the grain accounts indicates that sealed shipments are being diverted away from northern villages. Ilya has not agreed to speak privately.');
+ if(at==='route_lucien_13'&&f.tower_dissent_withdrawn)out=out.replace('You learn about them when Neri asks whether you are ready for the decision.','You learn about the publicly reportable risks through the Curators’ notice.');
+ if(at==='route_kael_14'&&f.sareth_crew_separate)out+='\n\nYou have not been invited to vote on company business. Your discussion with Kael concerns the effect his decision would have on your own life.';
+ if(at==='route_kael_17'&&f.sareth_home_separate)out+='\n\nYour own lodging remains available to you. The company flag does not determine where you live.';
+ if(at==='margin_last'&&f.cross_custody_ended)out=out.replace('Vesper’s reciprocal custody agreement gives you an independent place to preserve your own statement.','You have retrieved your copy from Vesper. The former agreement no longer authorizes her to hold it.');
+ return out
+};
+
 function assignSceneVisuals(){
  for(const [id,node] of Object.entries(scenes)){
   if(node.visuals)continue;
@@ -1591,7 +1732,7 @@ function choose(choice,index){
  for(const [key,val] of Object.entries(effect)){if(['traits','personality','flag','route','social','margin','sareth','tower'].includes(key))continue;if(key in state.affections)state.affections[key]+=val;else add(key,val)}
  state.history.push({from:state.at,choice:label});
  if(state.at==='authorLoop'&&next==='authorLoop')state.flags.authorLoops=(state.flags.authorLoops||0)+1;
- state.turn++;state.at=next.startsWith('end_')&&state.route?'end_'+state.route+'_'+decideRouteEnding(state.route,state):next;
+ state.turn++;state.at=next.startsWith('end_')&&state.route?'end_'+state.route+'_'+decideRouteEnding(state.route,state):crossDestination(next,state);
  render();store();
 }
 
