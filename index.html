@@ -1890,6 +1890,98 @@ flowContinuity=function(text,s){
  return out;
 };
 
+
+/* Continuity audit: relationship status and acquired knowledge are separate.
+   Public events remain accessible; lost private access is not silently restored. */
+function auditMira(s){return !s.flags.mira_erased&&!s.flags.mira_visit_refused&&!miraUnavailable(s)&&socialScore(s,'mira','trust')>=3}
+function auditTessa(s){return !s.flags.tessa_departed&&!s.flags.tessa_professional&&(!s.flags.social_source_exposed||s.flags.repair_tessa)}
+function auditIlya(s){return !s.flags.social_source_exposed&&socialScore(s,'ilya','trust')>=3&&!s.flags.queue_bribe}
+function auditNeri(s){return (!pastChoice(s,'route_lucien_2',2)||s.flags.repair_neri)&&socialScore(s,'neri','trust')>=3&&!s.flags.tower_dissent_withdrawn}
+function auditRowan(s){return !s.flags.north_command_distance&&(!pastChoice(s,'route_elian_7',2)||s.flags.repair_rowan)&&socialScore(s,'rowan','trust')>=3}
+function auditSefa(s){return !s.flags.sareth_crew_separate&&(!pastChoice(s,'route_kael_2',2)||s.flags.repair_crew)&&socialScore(s,'sefa','trust')>=3}
+const auditedBeforeChoices=storyChoices;
+storyChoices=function(node,s){
+ let a=auditedBeforeChoices(node,s).slice(),at=s.at;
+ const blocked=new Set();
+ if(!auditMira(s))for(const k of ['capital_mira','capital_cards','capital_grain_relief','capital_complaint_mira','north_letters_reply'])blocked.add(k);
+ if(!auditTessa(s))blocked.add('capital_tessa');
+ if(!auditIlya(s))for(const k of ['capital_budget_ilya','capital_grain_registry','foundation_ball_registry'])blocked.add(k);
+ if(!auditNeri(s))blocked.add('tower_neri_file');
+ if(!auditRowan(s))for(const k of ['north_hearing_rowan','north_rowan_tip'])blocked.add(k);
+ if(!auditSefa(s))for(const k of ['sareth_crew_work','sareth_dispute_records'])blocked.add(k);
+ a=a.filter(c=>!blocked.has(c[1]));
+ /* Preserve the original choice's mechanical effects where appropriate,
+    but do not award personal trust for a public or institutional encounter. */
+ const change=(i,label,remove=[])=>{
+  const c=node.choices[i];if(!c)return;
+  a=a.map(v=>v===c||v[1]===c[1]&&v[0]===c[0]? [label,v[1],{...v[2],social:Object.fromEntries(Object.entries(v[2].social||{}).filter(([k])=>!remove.includes(k)))},v[3]]:v)
+ };
+ if(at==='route_elian_6'&&!auditMira(s)){change(0,'Answer the public inquiry and retain my own correspondence.',['mira','tessa']);change(1,'Tell the messenger that Elian manages the household.',['mira']);}
+ if(at==='route_kael_6'&&!auditMira(s))change(0,'Reply to the investigators without committing to a return.',['mira']);
+ if(at==='route_aurelian_7'&&!auditMira(s))change(0,'Restore the original record and ask that Mira decide whether to contact me.',['mira']);
+ if(at==='intimate_elian_13_0'&&!auditMira(s)){change(1,'Decline the public festival invitation.',['mira']);change(2,'Ask Elian to refuse further invitations from the south.',['mira']);}
+ if(at==='lore_cassian_9'&&!auditIlya(s))change(0,'Protect the integrity of the public record and debate the grain decree.',['ilya']);
+ if(s.flags.tessa_departed||s.flags.tessa_professional){
+  a=a.map(c=>{if(!c[2]?.social?.tessa)return c;const e={...c[2],social:{...c[2].social}};delete e.social.tessa;return [c[0],c[1],e,c[3]]});
+ }
+ return a;
+};
+const auditedBeforeNarration=flowContinuity;
+flowContinuity=function(text,s){
+ let out=auditedBeforeNarration(text,s),at=s.at,f=s.flags;
+ const mira=auditMira(s),tessa=auditTessa(s),ilya=auditIlya(s);
+ if(at==='route_elian_6'&&!mira)out='A messenger from the southern charity arrives with a public inquiry about the winter roads. There is no personal letter from Mira. Elian receives the messenger courteously, then tells the driver to leave before nightfall.\n\nThe messenger asks whether replies should be sent directly to you or through the duke’s office. Elian answers before you can.\n\nYou notice the distinction between someone caring about your safety and someone deciding who may reach you.';
+ if(at==='route_elian_6'&&mira&&!tessa)out=out.replace('letters from Tessa and a bundle of drawings','a bundle of drawings');
+ if(at==='route_elian_9'&&!mira)out=out.replace("You recognize Mira's handwriting.","You recognize the seal of a public charity circular.").replace('the letters from Tessa','other correspondence addressed to you');
+ if(at==='route_elian_9'&&!tessa)out=out.replace('the letters from Tessa','other correspondence addressed to you');
+ if(at==='north_letters'){
+  if(!mira)out=out.replace(/Mira's visit has left a packet of letters on your desk\.[\s\S]*?outgoing post tray\./,'A packet of public notices from the south lies on your desk. Maren brings the outgoing post tray.');
+  else if(!tessa)out=out.replace(/Tessa has included gossip[^.]*\./,'There is no private letter from your former attendant.');
+  if(!mira)out=out.replace('answer the letters','review the public notices');
+ }
+ if(at==='intimate_elian_13_0'&&!mira)out=out.replace(/Mira has invited you to the spring festival in the south\.[\s\S]*?three pages of gossip\./,'A public notice announces the spring festival in the south. There is no personal invitation in the packet.').replace('an ordinary visit to a friend','an ordinary journey of your own');
+ if(at==='intimate_elian_13_0'&&mira&&!tessa)out=out.replace(/and carries an enthusiastic postscript from Tessa[^.]*\./,'and contains the festival’s dates.');
+ if(at==='route_elian_14'&&(!mira||!tessa))out=out.replace("You think of Mira waiting in the south and Tessa's letters on your desk.","You think of the roads beyond the estate and the correspondence you have the right to send.");
+ if(at==='route_elian_16'&&!mira)out=out.replace('You imagine Mira arriving after a long journey only to be told you were away.','You imagine a visitor arriving after a long journey only to be told you were away.');
+ if(at==='route_kael_6'&&!mira)out=out.replace("Mira's letter arrives in a sealed packet from Asteria.",'A formal request from the Asterian investigators arrives in a sealed packet.').replace('She says the conspiracy','The notice says the conspiracy');
+ if(at==='route_aurelian_7'&&!mira)out='Aurelian shows you two versions of a public record concerning Mira and the charity. One contains an accusation that does not appear in your own journal. The alteration has reached a person who need not be your friend for her history to matter.\n\n“Mira was a distraction,” he says. “I thought the record might be less troublesome this way.”\n\nYou ask whether she consented to the change. He looks genuinely puzzled.\n\nYou have no claim to her private memories. Neither does he. The question is what you will allow him to do with the record.';
+ if(at==='route_aurelian_11'&&!mira)out=out.replace('You look at Mira, caught in the middle of a laugh. She is alive','You look at a guest caught in the middle of a laugh. She is alive');
+ if(at==='lore_cassian_9'&&!ilya)out=out.replace('A clerk named Ilya risks her position to tell you that the sealed grain shipments are being diverted away from northern villages.','The council’s published allocation schedule shows that grain shipments are being diverted away from northern villages.');
+ if(at==='route_lucien_13'&&!auditNeri(s))out=out.replace('You learn about them when Neri asks whether you are ready for the decision. Her expression changes as soon as she realizes you did not know there was a decision to make.','You discover the existence of the results in the public research review agenda. The actual findings concern your own participation; you request them directly from Lucien.');
+ if(at==='capital_morning'){
+  if(!mira)out=out.replace('Mira has also sent a note inviting you to tea.','No personal invitation accompanies the public schedule.');
+  if(!tessa)out=out.replace(/Tessa is trying to work out[^.]*\./,f.tessa_departed?'Agnes is checking the household schedule.':'The household staff are checking the laundry arrangements.');
+ }
+ if(at==='capital_evening')out=out.replace("Mira is hosting cards, Tessa wants to visit the dressmaker before the shops close, and Halden is preparing tomorrow's papers.",(mira?'Mira is hosting cards. ':'')+(tessa?'Tessa wants to visit the dressmaker before the shops close. ':'')+'Halden is preparing tomorrow’s papers.');
+ if(at==='capital_grain')out=out.replace('Celeste has warehouse contacts. Ilya has the registry extract. Mira offers to organize a collection with her acquaintances. Each can help in a different way, and each has limits.','Celeste has warehouse contacts. '+(ilya?'Ilya has offered to verify the registry extract. ':'The public allocation schedule remains available. ')+(mira?'Mira offers to organize a collection. ':'')+'Each available avenue has limits.');
+ if(at==='capital_budget'&&!ilya)out=out.replace('Ilya has identified a related transfer in the registry.','A related transfer appears in the public treasury schedule.');
+ if(at==='capital_complaint'&&!mira)out=out.replace(' Mira asks whether you want her to speak to the women who know the dismissed servant.','');
+ if(at==='capital_house'&&!tessa)out=out.replace('Tessa asks which arrangement will determine who may read your correspondence.',f.tessa_departed?'Agnes asks which arrangement governs household correspondence.':'The steward asks which arrangement governs household correspondence.');
+ if(at==='capital_house_private'&&!tessa)out='The household staff receive the revised schedule and privacy rules. Your attendant will coordinate ordinary duties without access to your confidential inquiries. You retain the right to decide which public duties you accept.';
+ if(at==='tower_council'&&!auditNeri(s))out=out.replace('Neri has a folder of corrections she is afraid to submit.','The public review agenda includes a notice of disputed observations.');
+ if(at==='c2_queue'&&f.foundation_public_stamp)out=out.replace('on the day Orin remembered','during the period covered by the repair receipt');
+ if(at==='c2_ilya'&&f.foundation_public_stamp)out=out.replace("a wheelmaker's recollection","a publicly identified fitting");
+ if(at==='c2_duke_meeting'&&f.foundation_public_stamp)out=out.replace("the wheelmaker's account","the documented fitting information");
+ if(at==='c4_staff'&&!flowSeen(s,'witnessRisk')&&!flowSeen(s,'c3_miraSlow'))out=out.replace("and Mira's careful question: will you help me if I say no?","and the charity’s restrictions on private information.");
+ if(at==='c5_firstWitness'&&!flowSeen(s,'witnessRisk')&&!flowSeen(s,'c3_miraSlow'))out=out.replace("Orin's careful silences and Mira's shaking hands","the limits of the records you were permitted to inspect");
+ return out
+};
+/* Responses following alternate public encounters must not reintroduce the
+   original private visitor. Keep transitions and prior choice IDs intact. */
+const auditResponseBefore=flowContinuity;
+flowContinuity=function(text,s){let out=auditResponseBefore(text,s),at=s.at;
+ if(!auditMira(s)&&/^response_route_elian_6_[012]$/.test(at)){
+  const i=Number(at.slice(-1));out=['The messenger records your preferred address. Elian’s expression hardens, but the public inquiry remains separate from the household’s private correspondence.','The messenger accepts the duke’s office as the reply address. You have surrendered control of this particular exchange.','Elian instructs the gate staff to refuse unscheduled visitors. The public inquiry is referred to his office.'][i];
+ }
+ if(!auditMira(s)&&/^follow_route_kael_6_[012]$/.test(at)){
+  const i=Number(at.slice(-1));out=['Kael helps you find the public postal office. Your reply concerns the investigation, not a friendship you have not established.','Kael puts the unopened future correspondence aside at your request. He says that an official summons may still require an answer.','Kael will not destroy an official request that belongs to you. He sets the packet aside and tells you that the choice of reply remains yours.'][i];
+ }
+ if(!auditMira(s)&&/^response_route_aurelian_7_[012]$/.test(at)){
+  const i=Number(at.slice(-1));out=['Aurelian restores the public record. Mira is not summoned, and no friendship is invented to compensate for the change.','The altered record remains in circulation. Aurelian closes the book and seems relieved that you are not pursuing the discrepancy.','Aurelian’s expression brightens. He removes the disputed connection from the manuscript. The people whose history has changed are not asked.'][i];
+ }
+ return out
+};
+
 function assignSceneVisuals(){
  for(const [id,node] of Object.entries(scenes)){
   if(node.visuals)continue;
