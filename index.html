@@ -1982,6 +1982,98 @@ flowContinuity=function(text,s){let out=auditResponseBefore(text,s),at=s.at;
  return out
 };
 
+
+/* Stable decision identity survives conditional label and effect changes. */
+function stableDecisionIndex(node,c){
+ let i=node.choices.indexOf(c);if(i>=0)return i;
+ i=node.choices.findIndex(v=>v[0]===c[0]&&v[1]===c[1]);if(i>=0)return i;
+ const signature=e=>JSON.stringify([e?.traits||{},e?.personality||{},e?.route||null,...Object.keys(routeBlueprints).map(k=>e?.[k]||0)]);
+ const matches=node.choices.map((v,j)=>v[1]===c[1]&&signature(v[2])===signature(c[2])?j:-1).filter(j=>j>=0);
+ return matches.length===1?matches[0]:-1
+}
+const oldStableChoice=flowChoice;
+flowChoice=function(s,id,i){const h=(s.history||[]).findLast(x=>x.from===id);return h&&Number.isInteger(h.option)&&h.option>=0?h.option===i:oldStableChoice(s,id,i)};
+const beforeDecisionChoices=storyChoices;
+storyChoices=function(node,s){
+ let a=beforeDecisionChoices(node,s).slice();
+ if(s.at==='investigate'){
+  const types={treasuryTrap:'financial',witnessRisk:'human',foundation_witness_public:'human',observatoryCost:'magical'};
+  a=a.map(c=>{const k=types[c[1]];if(!k)return c;const changed=['financial','human','magical'].some(v=>v!==k&&s.flags['evidence_'+v]);return [(changed?'Change my priority: ':'')+c[0],c[1],{...c[2],flag:'actual_evidence_'+k},c[3]]});
+ }
+ if(s.at==='cross_north_correspondence'&&!auditMira(s))a=a.filter(c=>!c[0].includes('Mira'));
+ if(s.at==='capital_future'&&s.flags.conflict_faction_revised)a=a.filter(c=>!c[0].startsWith('Maintain the recorded provincial agreement'));
+ if(s.at==='margin_last'&&s.flags.conflict_records_revised)a=a.filter(c=>c[1]!=='margin_last_witness');
+ return a
+};
+/* Each commitment has a concrete follow-through or a deliberate renegotiation. */
+const COMMITMENT_REVIEWS=[
+ ['mail','capital_house',10,'hall','Halden',s=>pastChoice(s,'route_cassian_5',0),
+ 'Halden lays the signed correspondence instruction beside the household proposals. “Ordinary letters were to remain sealed. Combining the offices does not cancel that instruction. Shall I attach it to the new agreement?”',
+ 'Retain the sealed-letter instruction.','Request a separate negotiation about household security.',
+ 'Halden attaches the privacy instruction to the proposals. Cassian must address it explicitly before any change.','Halden schedules a separate discussion. The existing instruction remains in effect until a replacement is agreed.'],
+ ['faction','route_cassian_16',11,'hall','Halden',s=>s.flags.cassian_faction_kept&&!s.flags.cross_faction_relinquished,
+ 'The provincial agreement requires a report before the first decree. The minister would prefer the unfinished work omitted. Halden brings the actual figures. You may retain responsibility or transfer it, but neither choice erases the commitment.',
+ 'Submit the figures, including the unfinished work.','Transfer responsibility to the ministry and notify the minister.',
+ 'Halden attaches the figures to the report. The minister receives the same record as the council.','The ministry takes responsibility for the report. Your negotiating role ends; the provincial agreement remains on record.'],
+ ['travel','route_elian_14',10,'north','Elian',s=>s.flags.cross_festival_stay||s.flags.elian_road_gate,
+ 'Elian finds you reading the road schedule. “You told me you intended to stay.” No southern carriage is booked. If you have reconsidered, he wants to hear it from you rather than the stable master.',
+ 'Explain that I have changed my mind and request a carriage.','Confirm that I am staying this spring.',
+ 'The stable master prepares a new carriage request. Your earlier agreement to stay is not treated as a permanent surrender of travel.','The southern journey remains canceled. You still have to decide how future journeys and visits will be arranged.'],
+ ['consent','route_lucien_12',9,'tower','Neri',s=>pastChoice(s,'route_lucien_3',0)||pastChoice(s,'route_lucien_3',3)||pastChoice(s,'route_lucien_5',0),
+ 'Neri finds the written limits from your earlier experiments. Lucien has installed a new ward. “This agreement covers sessions with the lens,” she says. “It does not authorize a restriction on the door.” She asks whether you want her to preserve the original document.',
+ 'Preserve the original consent agreement and ask for an explanation.','Ask Lucien to propose a separate agreement for the ward.',
+ 'Neri keeps the existing document on file. Lucien cannot claim that the earlier permission included the door.','Neri records the request for a separate agreement. No new permission has been granted yet.'],
+ ['home','route_kael_16',11,'garden','Kael',s=>s.flags.sareth_home_joint||s.flags.sareth_home_separate,
+ 'Kael brings the household receipts before you discuss the next voyage. The house arrangement remains valid even if one of you spends months away. He asks whether you want to revisit expenses, not whether your affection has changed.',
+ 'Keep our existing ownership and expense arrangement.','Arrange to review household expenses after the voyage.',
+ 'The existing agreement is retained. Neither the voyage nor an envoy application changes the title.','You agree on a date for the review. Until then, the existing ownership and separate funds remain as recorded.'],
+ ['records','route_aurelian_16',11,'blank','Ione',s=>s.flags.margin_review_role||s.flags.cross_public_restoration||s.flags.margin_charter,
+ 'Ione brings the record of the earlier restorations. “A correction is not permission to revise again.” Aurelian watches you read the terms. The agreement protects residents even when a new version of their lives might please either of you.',
+ 'Confirm that further restorations must respect the recorded limits.','Withdraw from the review role without surrendering residents’ rights.',
+ 'Ione records your continuing commitment. Your affection for Aurelian cannot authorize changes to another person’s history.','Ione records your withdrawal. The residents’ existing protections remain in effect.']
+];
+const commitmentTargets={};
+for(const [key,target,ch,bg,speaker,gate,body,l0,l1,t0,t1] of COMMITMENT_REVIEWS){
+ const id='conflict_'+key;commitmentTargets[target]=[id,gate];
+ dynNode(id,ch,bg,speaker,body,[dynC(l0,id+'_keep',{flag:id+'_kept'}),dynC(l1,id+'_revise',{flag:id+'_revised'})]);
+ dynNode(id+'_keep',ch,bg,'Narrator',t0,[dynC('Continue.',target)]);
+ dynNode(id+'_revise',ch,bg,'Narrator',t1,[dynC('Continue.',target)]);
+}
+const previousDestination=crossDestination;
+crossDestination=function(to,s){const next=previousDestination(to,s),p=commitmentTargets[next];return p&&!s.flags[p[0]+'_kept']&&!s.flags[p[0]+'_revised']&&p[1](s)?p[0]:next};
+/* A canceled journey is not a departure. The local outing has its own response. */
+const beforeTravelChoices=storyChoices;
+storyChoices=function(node,s){let a=beforeTravelChoices(node,s);
+ if(s.at==='route_elian_14'&&s.flags.conflict_travel_revised)a=a.map(c=>{const i=stableDecisionIndex(node,c);return i>=0&&i<3?[['Arrange a local outing and invite him to join me.','Ask him to arrange the local outing.','Cancel the outing and leave the arrangements to him.'][i],c[1],c[2],c[3]]:c});
+ return a
+};
+const beforeCommitmentNarration=flowContinuity;
+flowContinuity=function(text,s){
+ let out=beforeCommitmentNarration(text,s),at=s.at,f=s.flags;
+ if(at==='investigate')out+='\n\nBelden reminds you that your earlier preference was a plan, not completed evidence. Changing priorities means leaving the other leads unresolved.';
+ if(at==='observatoryCost'&&!f.picked_tower)out=out.replace('Neri arranges a second magical examination','Neri arranges an initial magical examination');
+ if(at==='vialScene'&&f.magic_rushed)out=out.replace('The report is signed by two mages.','Vespera refused the early signature. After the second examiner completed the work, two mages signed the report.');
+ if(at==='ledgerScene'&&f.ledger_unlawful_copy)out=out.replace('A certified copy is issued','The clerk records the unauthorized copying attempt and requires you to surrender it. After the supervisor reviews the request, a separate certified copy is issued');
+ if(at==='c5_rebuttal'&&f.ledger_unlawful_copy)out+='\n\nPerrin acknowledges the unauthorized copying attempt and relies on the separately certified extract instead. She does not claim that every action you took was authorized.';
+ if(at==='c5_rebuttal'&&f.defense_jurisdiction)out=out.replace('But the records you brought are dated and traceable.','The magistrates have asked the prosecutor to establish authority for the sealed accusation. Your public records are available for corroboration.');
+ if(at==='c5_rebuttal'&&f.defense_witnesses)out=out.replace('But the records you brought are dated and traceable.','The authorized statements establish only what their authors personally witnessed. The public records are available for corroboration.');
+ if(at==='capital_complaint'&&pastChoice(s,'route_cassian_13',1))out+='\n\nHalden reminds you that asking Cassian to suppress the complaint did not settle the servant’s claim. You may reconsider before the response is filed.';
+ if(at==='capital_complaint'&&pastChoice(s,'route_cassian_13',2))out+='\n\nDarrow has learned of your threat. Any independent review must now address the possibility of retaliation as well as the original complaint.';
+ if(at==='capital_house'&&f.conflict_mail_kept)out+='\n\nThe sealed-letter instruction is attached to each household proposal.';
+ if(at==='capital_future'&&f.conflict_faction_revised)out+='\n\nThe ministry now administers the provincial agreement. You no longer negotiate its implementation.';
+ if(at==='intimate_elian_13_1'&&f.cross_festival_stay)out=out.replace('The night before your planned departure','On the evening after you decide to stay').replace('before you finish packing','if you ever changed your mind');
+ if(at==='route_elian_14'&&f.conflict_travel_revised)out='The stable master confirms that no southern carriage is booked. Elian accompanies you to the courtyard to discuss a local outing. You have agreed to stay this spring; that does not settle who controls future travel.\n\nHe asks whether you want him to arrange the outing or whether you would rather make the arrangements yourself.';
+ if(at==='route_elian_14'&&f.conflict_travel_kept)out='The stable master has arranged the carriage you requested. Elian stands beside it, troubled by the change of plan. The guard has been instructed to report your progress. You must decide whether those conditions are acceptable.';
+ if(f.conflict_travel_revised&&/^follow_route_elian_14_[012]$/.test(at))out=['The stable master records your local outing in your name. Elian asks whether he may come along.','Elian arranges the outing and tells you when the carriage will be ready.','The outing is removed from the schedule. Elian takes charge of the arrangements you have left to him.'][Number(at.slice(-1))];
+ if(at==='route_lucien_12'&&(f.conflict_consent_kept||f.conflict_consent_revised))out+='\n\nThe earlier agreement Neri retrieved provides no authorization for the locked door. Any agreement about this ward must be separate.';
+ if(at==='sareth_home_end'&&f.sareth_room)out='Your rental agreement is recorded in your name. Kael’s house purchase remains a separate matter; no joint title has been signed.';
+ else if(at==='sareth_home_end'&&f.sareth_home_defer)out='Kael takes responsibility for the purchase negotiations. Your contribution and ownership remain undecided; no agreement is recorded in your name.';
+ else if(at==='sareth_home_end'&&!f.sareth_title)out='The title and boundary documents remain under review. You have not committed to the purchase.';
+ if(at==='route_kael_17'&&f.sareth_crew_separate)out=out.replace("The charter rests on the table beneath the names of the crew members who voted to accept the new arrangement.","The company charter remains the responsibility of its voting crew. Your own arrangements are recorded separately.");
+ if(at==='margin_last'&&f.conflict_records_revised)out+='\n\nIone has recorded your withdrawal from the review role. You may still submit your own statement.';
+ return out
+};
+
 function assignSceneVisuals(){
  for(const [id,node] of Object.entries(scenes)){
   if(node.visuals)continue;
@@ -2039,10 +2131,11 @@ function choose(choice,index){
  if(!node)return;
  const [label,next,effect={},requirement]=choice;
  if(requirement&&!requirement(state))return;
- socialEnsure(state);socialApply(state,state.at,node.choices.indexOf(choice),effect,label);marginApply(state,effect);sarethApply(state,effect);towerApply(state,effect);
+ const option=stableDecisionIndex(node,choice);socialEnsure(state);socialApply(state,state.at,option,effect,label);marginApply(state,effect);sarethApply(state,effect);towerApply(state,effect);
  modifyTraits(effect);
+ if(state.at==='investigate'&&effect.flag?.startsWith('actual_evidence_')){for(const k of ['financial','human','magical']){delete state.flags['evidence_'+k];delete state.flags['actual_evidence_'+k]}const k=effect.flag.slice('actual_evidence_'.length);state.flags['evidence_'+k]=true;state.flags[effect.flag]=true;}
  for(const [key,val] of Object.entries(effect)){if(['traits','personality','flag','route','social','margin','sareth','tower'].includes(key))continue;if(key in state.affections)state.affections[key]+=val;else add(key,val)}
- state.history.push({from:state.at,choice:label});
+ state.history.push({from:state.at,choice:option>=0?node.choices[option][0]:label,option,displayChoice:label});
  if(state.at==='authorLoop'&&next==='authorLoop')state.flags.authorLoops=(state.flags.authorLoops||0)+1;
  if(node.choices.length>1)state.turn++;state.at=next.startsWith('end_')&&state.route?'end_'+state.route+'_'+decideRouteEnding(state.route,state):crossDestination(next,state);
  render();store();
