@@ -576,28 +576,14 @@ function routeChoiceCount(id,s,optionIndex){
  }).length;
 }
 function decideRouteEnding(id,s){
- const t=s.traits||{},p=s.personality||{},f=s.flags||{},get=k=>t[k]??0;
+ const t=s.traits||{},f=s.flags||{},get=k=>t[k]??0;
  const independent=routeChoiceCount(id,s,0),coercive=routeChoiceCount(id,s,2);
- if(id==='elian'){
-  if(f.duke_permanent_clasp||get('possession')>=85&&(get('autonomy')<=35||coercive>=10))return 'horrible';
-  return independent>=9&&get('autonomy')>=65&&get('possession')<=65?'good':'bad';
- }
- if(id==='cassian'){
-  if(get('control')>=85&&coercive>=9&&(p.villainy||0)>=55)return 'horrible';
-  return independent>=9&&get('autonomy')>=65&&get('control')<=65?'good':'bad';
- }
- if(id==='lucien'){
-  if(get('experimentation')>=85&&(get('autonomy')<=35||coercive>=10))return 'horrible';
-  return independent>=9&&get('autonomy')>=65&&get('experimentation')<=65?'good':'bad';
- }
- if(id==='kael'){
-  if(get('dependency')>=85&&coercive>=9&&((p.villainy||0)>=55||get('trust')<=15))return 'horrible';
-  return independent>=8&&get('autonomy')>=60&&get('dependency')<=65?'good':'bad';
- }
- if(id==='aurelian'){
-  if(f.broke_choice_system&&get('autonomy')>=70&&get('restraint')>=35&&get('authorship')<=65&&independent>=9)return 'good';
-  return get('authorship')>=90&&((get('autonomy')<=35&&(p.denial||0)>=25)||(p.villainy||0)>=60||coercive>=10)?'horrible':'bad';
- }
+ const limits={cassian:[8,60,8,'control'],elian:[7,60,9,'possession'],lucien:[8,65,9,'experimentation'],kael:[7,55,8,'dependency'],aurelian:[9,70,9,'authorship']};
+ const [minimum,agency,danger,flaw]=limits[id]||limits.cassian;
+ // Cumulative flaw meters saturate; repeated conduct distinguishes mixed choices from sustained abuse.
+ if(id==='elian'&&f.duke_permanent_clasp)return 'horrible';
+ if(get(flaw)>=85&&(coercive>=danger||(id==='elian'||id==='lucien'||id==='aurelian')&&get('autonomy')<=30&&independent<minimum))return 'horrible';
+ if(independent>=minimum&&get('autonomy')>=agency&&coercive<=5&&(id!=='kael'||get('trust')>=25)&&(id!=='aurelian'||f.broke_choice_system&&get('restraint')>=35))return 'good';
  return 'bad';
 }
 for(const id of Object.keys(routeBlueprints)){
