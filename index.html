@@ -2306,6 +2306,22 @@ const FINAL_TRANSITIONS={"elian":{"good":[["The steward brings two sets of keys.
 for(const [id,grades] of Object.entries(FINAL_TRANSITIONS))for(const [grade,parts] of Object.entries(grades))parts.forEach(([body,label],i)=>{const key='final_'+id+'_'+grade+'_'+i;scenes[key]={chapter:13,bg:routeScenery[id],speaker:'Narrator',who:['sera',id],text:body,choices:[[label,i===0?'final_'+id+'_'+grade+'_1':'end_'+id+'_'+grade,{}]]};});
 const beforeFinalDestination=crossDestination;
 crossDestination=function(to,s){if(s.route&&to==='route_'+s.route+'_resolve')return 'final_'+s.route+'_'+decideRouteEnding(s.route,s)+'_0';return beforeFinalDestination(to,s);};
+const RELATIONSHIP_CUES={"cassian":[["Cassian waits for the rest of your argument rather than supplying it himself.","Cassian answers a question addressed to you, then looks surprised when you begin your own reply."],["He leaves the disputed clause in your copy. Neither of you has to pretend agreement.","A decision reaches you already approved. His explanation is affectionate, but the omission is not accidental."],["He asks which matters you intend to handle yourself.","The secretaries increasingly look to Cassian before acting on your requests."]],"elian":[["Elian watches your reaction before pressing the matter further.","Elian speaks of arranging matters on your behalf as though your agreement were a detail to settle later."],["He disagrees openly, but does not withdraw the authority you have claimed.","A request made in your name comes back with his approval attached. You had not asked him to approve it."],["He asks when you intend to return, then accepts your answer.","The household has begun treating his preferences as instructions even when he is absent."]],"lucien":[["Lucien catches your expression and asks whether you actually want to hear the rest.","Lucien studies your reaction longer than the conversation warrants."],["He leaves a question unanswered when you decline to discuss it. The omission plainly irritates him.","He remembers your hesitation with greater precision than the reason you gave for it."],["He sets his notes aside when the discussion becomes personal.","You notice how often a personal conversation ends with him wanting to establish a pattern."]],"kael":[["Kael asks what you intend to do while he attends to company business.","Kael offers to arrange your next obligation himself. It is becoming easier to accept."],["He checks his schedule against yours instead of assuming you will be available.","His next departure seems to overshadow every other plan you discuss."],["He talks about the coming weeks as two sets of obligations that must fit together.","Even an ordinary company obligation now seems to demand a negotiation about how much time belongs to you."]],"aurelian":[["Aurelian seems about to finish your sentence, then waits. His smile is carefully composed.","Aurelian answers a question you were only considering."],["For once, a pause remains a pause. He looks uncomfortable with the uncertainty.","A phrase sounds strangely familiar. Aurelian does not appear surprised when you repeat it."],["He lets an awkward silence stand, although his attention keeps returning to the nearest page.","You notice a discrepancy in the wording of a memory. Before you can examine it, he draws your attention elsewhere."]]};
+function relationshipCue(s){
+ const m=/^route_(cassian|elian|lucien|kael|aurelian)_(4|10|15)$/.exec(s.at);
+ if(!m||s.route!==m[1])return '';
+ const [,id,stage]=m,history=(s.history||[]).filter(h=>h.from.startsWith('route_'+id+'_')&&/^\d+$/.test(h.from.split('_').pop()));
+ const recent=history.slice(-5),score=h=>Number.isInteger(h.option)&&h.option>=0?h.option:scenes[h.from]?.choices.findIndex(c=>c[0]===h.choice);
+ const good=recent.filter(h=>score(h)===0).length,bad=recent.filter(h=>score(h)===2).length,accommodating=recent.filter(h=>score(h)===1).length;
+ if(recent.length<3)return '';
+ const pair=RELATIONSHIP_CUES[id][['4','10','15'].indexOf(stage)];
+ if(good>=3&&good>bad+accommodating)return '\n\n'+pair[0];
+ if((bad>=2&&bad>=good)||(accommodating>=3&&good<=1))return '\n\n'+pair[1];
+ return '';
+}
+const beforeRelationshipCue=flowContinuity;
+flowContinuity=function(t,s){return beforeRelationshipCue(t,s)+relationshipCue(s);};
+
 function render(){
  socialEnsure(state);const node=scenes[state.at];if(!node){if(!endings[state.at])throw new Error('Unknown story destination: '+state.at);finish(state.at);return}
  state.chapter=node.chapter;
