@@ -1755,6 +1755,88 @@ flowContinuity=function(text,s){
 };
 /* Eliminate hidden-trait spoilers and keep only genuine decisions in the counter. */
 
+const PROSE_EDITS=[["route_cassian_1","You feel the old familiar temptation to let an important man defend you. Standing up would mean admitting that your position is uncertain. But you also remember every hour you spent learning how to read the records these men take for granted.","The insult leaves a useful silence. Cassian could end it with a sentence, but he hasn't. You have to decide whether his intervention would serve you better than your own."],["route_cassian_4","You cannot fix this with an elegant speech. You can only decide what kind of partner you want to be when someone powerful is wrong.","The nurse needs a roof, the treasury needs an authorized expenditure, and Cassian needs an answer that will survive the next council meeting. Those interests do not necessarily coincide."],["route_cassian_8","You want the man punished for what he helped arrange. You also know that killing him would silence the only witness willing to describe the chain of orders.","The man may deserve punishment. His information may also be valuable. Cassian's officers are waiting to see which consideration you place first."],["route_cassian_12","You have learned enough here to know that beautiful furniture isn't a constitution.","The chair is a visible symbol. The clauses are less impressive to look at, but they will determine what you can actually do."],["route_elian_1","You hadn't imagined the consequences extending beyond the people who wrote the letter.","The account includes people who had no part in writing the letter. Whether their dismissal was necessary is a separate question."],["route_elian_2","You are unsettled by the seriousness with which he explains both options.","He explains both options with the gravity he usually reserves for military orders. There is nothing tentative about his interest."],["route_elian_8","Being known so completely is intoxicating. Being observed so completely is something else.","He has taken considerable trouble over the gift. The method by which he learned your preferences is a separate matter, and he seems curious whether you will distinguish them."],["route_elian_10","You feel your stomach turn. You ask whether","You study his expression. You ask whether"],["route_kael_1","You feel a flush of irritation. It would be easier to let him speak.","Letting him speak would be quicker. Learning the words would change what you could do the next time he wasn't there."],["route_kael_8","You are grateful that he doesn't try to speak for you.","He has left the interview to you. The registrar waits for your own answer."],["route_aurelian_2","The casualness of the answer makes you feel ill.","He says it with the easy confidence of someone describing a successful repair. He watches your face for approval."],["route_aurelian_4","The perfection is beautiful and somehow lonely. You wish there were one thing neither of you had expected.","He has reproduced your preferences with remarkable precision. You wonder what would happen if you asked for something he had not anticipated."],["route_aurelian_6","The answer is not reassuring.","He seems to think that is a complete answer."],["route_aurelian_10","You cling to him before you can stop yourself. He holds you with an expression so tender that you almost forget to ask how he arrived.","He catches your arm and steadies you. His relief seems disproportionate to the danger he claims to have anticipated. You have a moment to recover before asking how he arrived."],["route_aurelian_8","You tell Aurelian no.\n\nHe has asked whether you will stay with him in the Unwritten Room until he decides the world is safe. You have answered clearly, without anger.","Aurelian asks whether you will stay in the Unwritten Room until he decides the world is safe. When you ask whether you could change your mind later, he goes quiet."]];
+const CHARACTER_VOICES={"cassian":["“I have a free quarter of an hour. An unprecedented administrative disaster. Would you care to share it?”","“You have a talent for making an easy answer expensive. I am beginning to appreciate it.”","“I can negotiate with a room full of ministers. With you I would rather not have to.”"],"elian":["“Sit wherever you like. The chair by the fire is warmer. That is advice, not an order.”","“You disagree with me rather comfortably now. I suppose I encouraged that.”","“I know what I want. I am less certain what you will allow me to have.”"],"lucien":["“You are early. Or the clock is wrong. I dislike both possibilities equally.”","“An objection? Excellent. I was becoming dangerously pleased with my own reasoning.”","“I am capable of admitting ignorance. I simply prefer not to do it before an audience.”"],"kael":["“I've got an hour before Sefa starts looking for me. Come on, the bread's still warm.”","“You know you can tell me I'm wrong without making a speech first, don't you?”","“I missed you. That's not a request to change your plans. I just thought you ought to know.”"],"aurelian":["“I almost wrote that you would arrive at this moment. Instead I waited. It was a very long minute.”","“You have made anticipation terribly inconvenient for me. I find I want more of it.”","“I know perfectly well what I am doing when I arrange these things. That is not quite the same as knowing how to stop.”"]};
+
+/* Character progression derives from recent decisions and established history.
+   It does not replace the player's personality stats or ending calculations. */
+for(const [id,from,to] of PROSE_EDITS){if(scenes[id].text.includes(from))scenes[id].text=scenes[id].text.replace(from,to)}
+function progressionProfile(s){
+ const history=s.history||[],recent=history.filter(h=>scenes[h.from]?.choices.length>1).slice(-12);
+ let sums={villainy:0,compassion:0,resolve:0,denial:0,autonomy:0,trust:0},n=0;
+ for(const h of recent){const c=scenes[h.from]?.choices.find(c=>c[0]===h.choice);if(!c)continue;n++;for(const k of Object.keys(sums))sums[k]+=(c[2].personality?.[k]||0)+(c[2].traits?.[k]||0)}
+ const p=s.personality||{},t=s.traits||{};
+ return {n,sums,strategic:(p.villainy||0)>=18&&sums.villainy>=5,compassionate:(p.compassion||0)>=20&&sums.compassion>=5,independent:(t.autonomy||0)>=60&&sums.autonomy>=4,dependent:(t.autonomy||0)<=45||sums.denial>=7,changing:(p.villainy||0)>=20&&sums.compassion>=8&&sums.compassion>sums.villainy+4};
+}
+const romanceFlags={
+ cassian:['cassian_first_kiss','capital_private_night','capital_private_time'],
+ elian:['elian_first_kiss','north_private_night'],
+ lucien:['lucien_first_kiss','tower_private_night','tower_private_time'],
+ kael:['kael_first_kiss','sareth_private_night','kael_old_flame_tease'],
+ aurelian:['aurelian_first_kiss']
+};
+function progIntimacy(s,id){return romanceFlags[id]?.some(f=>s.flags[f])||false}
+function progFamiliar(s,id){return (s.affections[id]||0)>=17&&socialScore(s,id,'trust')>=3}
+const phaseLines={
+ cassian:['He makes room for you beside the papers, not yet assuming that you want to stay.','He leaves a second cup beside his papers without asking whether you will be there.','He has learned which disagreements can wait until breakfast and which cannot.'],
+ elian:['He addresses you with the courtesy he would extend to a guest, though his attention lingers.','He recognizes the sound of your steps in the corridor and turns before you speak.','He has learned some of your habits. Whether he has learned to respect them remains a separate question.'],
+ lucien:['He looks interested in your answer, and not entirely certain what you will say.','He has stopped explaining every small enchantment unless you ask.','There are questions he now brings to you before he brings them to his notebook.'],
+ kael:['He waits for you to decide where you want to sit.','He knows which market stall you prefer and asks whether you want anything before he leaves.','He has made room for your routines alongside his own, even when the company calls him away.'],
+ aurelian:['He watches your expression as though it might reveal a sentence he has not read.','He has begun to recognize some of your jokes before you finish them.','He knows more of your habits than he admits; what he does with that knowledge is still unsettled.']
+};
+const stageScenes=[
+ ['cassian','intimate_cassian_1_0','depth_cassian_late','route_cassian_14'],
+ ['elian','intimate_elian_1_0','depth_elian_late','route_elian_14'],
+ ['lucien','intimate_lucien_1_0','depth_lucien_late','route_lucien_13'],
+ ['kael','intimate_kael_1_0','depth_kael_late','route_kael_14'],
+ ['aurelian','intimate_aurelian_1_0','depth_aurelian_late','route_aurelian_13']
+];
+const phaseLookup={};for(const [id,...ks] of stageScenes)ks.forEach((k,i)=>phaseLookup[k]=[id,i]);
+const progressionBefore=flowContinuity;
+flowContinuity=function(text,s){
+ let out=progressionBefore(text,s);const at=s.at,id=s.route,p=progressionProfile(s),f=s.flags;
+ if(phaseLookup[at]){
+ const [who,phase]=phaseLookup[at];
+ if(phase===0)out+='\n\n'+phaseLines[who][0];
+ else if(progFamiliar(s,who))out+='\n\n'+phaseLines[who][phase];
+ if(phase===1&&progFamiliar(s,who)&&progIntimacy(s,who))out+='\n\n'+CHARACTER_VOICES[who][1];
+ }
+ if(/^route_(cassian|elian|lucien|kael|aurelian)_(4|10|14)$/.test(at)){
+ const lines=p.changing?'The response that once came most easily no longer feels inevitable. You have been practicing a different way of dealing with people, and this is another occasion to decide whether it suits you.':p.strategic?'Your first instinct is to ask what each person stands to gain. You can act on that calculation or set it aside.':p.dependent?'Part of you would welcome someone else making the decision. You have relied on that comfort before, but the answer is still yours.':p.compassionate?'You find yourself noticing the people who would have to live with the decision, even if they have no place in this room.':p.independent?'You have grown accustomed to asking what authority is actually yours before accepting an arrangement.':'';
+ if(lines)out+='\n\n'+lines;
+ }
+ if(at==='route_elian_1'&&pastChoice(s,'route_elian_0',0)){
+ out='The Bellac family sends a written apology. Elian has accepted the document, but has also suspended a disputed trade privilege while his officers inspect the family accounts. A servant tells you that some of the household workers are worried about their wages.\n\nElian joins you at the window. “They have apologized. I found something else worth examining.”\n\nYou had asked for an apology and nothing more. His decision to pursue the accounts is his own; what you do about it remains to be decided.';
+ }
+ if(at==='route_elian_4'&&pastChoice(s,'route_elian_2',0))out=out.replace('She examines your wrist in silence, then asks whether the marks beneath your sleeve are painful. You tell her how they occurred.','She examines a bruise on your wrist from an awkward riding lesson. You explain how it happened.');
+ if(at==='route_aurelian_8'&&(pastChoice(s,'route_aurelian_6',1)||pastChoice(s,'route_aurelian_6',2)))out=out.replace('You try to leave. The room returns you to the same chair.','You ask to try the door, just to see whether it still exists. The room returns you to the same chair.');
+ if(at==='route_aurelian_8'&&pastChoice(s,'route_aurelian_6',0))out=out.replace('When you ask whether you could change your mind later, he goes quiet.','You remind him that you already asked for an exit. He goes quiet.');
+ if(at==='route_cassian_17'&&!progIntimacy(s,'cassian'))out=out.replace('You love parts of that man.','You have come to know parts of that man that few people see.');
+ if(at==='route_lucien_17'&&!progIntimacy(s,'lucien'))out=out.replace('You have loved him through','You have come to know him through');
+ if(at==='depth_kael_late'&&!progIntimacy(s,'kael'))out=out.replace('your relationship','the possibility of a relationship');
+ if(at==='depth_cassian_late'&&!progIntimacy(s,'cassian'))out=out.replace('kiss you','sit beside you');
+ if(at==='dynamic_'+id+'_private'&&progFamiliar(s,id))out+='\n\n'+CHARACTER_VOICES[id][0];
+ return out
+};
+/* Offer nuanced intermediate choices without changing original labels or removing alternatives.
+   Effects reuse existing traits, so no separate morality system is introduced. */
+const nuanced=[
+ ['route_cassian_4','Ask for an independent inspection before making the dispute public.','capital_budget',{cassian:2,traits:{autonomy:3,trust:1},personality:{resolve:3}}],
+ ['route_elian_3','Review the grain accounts before deciding whether to intervene.','north_salon',{elian:2,traits:{autonomy:2},personality:{resolve:3}}],
+ ['route_lucien_3','Agree to one carefully bounded trial in exchange for access to the method.','route_lucien_4',{lucien:2,traits:{autonomy:3,experimentation:1},personality:{resolve:3}}],
+ ['route_kael_4','Help renegotiate the contract in exchange for an agreed share of the work.','route_kael_5',{kael:2,traits:{autonomy:3},personality:{resolve:3}}],
+ ['route_aurelian_4','Enjoy the beautiful afternoon and ask him to leave one detail unplanned.','route_aurelian_5',{aurelian:2,traits:{restraint:3,authorship:1},personality:{resolve:2}}]
+];
+for(const [id,label,to,e] of nuanced){scenes[id].choices.push([label,to,e,s=>{const p=progressionProfile(s);return p.strategic||p.independent||p.changing}])}
+/* Keep a flirtation available without pretending a kiss has happened. */
+const progOldChoices=storyChoices;
+storyChoices=function(node,s){
+ let a=progOldChoices(node,s);
+ if(s.at==='depth_cassian_late'&&!progIntimacy(s,'cassian'))a=a.map(c=>c===node.choices[0]?['Tell him I would like an apology to Halden before we make plans together.',c[1],c[2],c[3]]:c);
+ if(s.at==='depth_kael_late'&&!progIntimacy(s,'kael'))a=a.map(c=>c===node.choices[1]?['Make a joke about his terrible taste in bouquets and ask him to supper.',c[1],{...c[2],flag:'kael_shared_joke'},c[3]]:c);
+ return a
+};
+
 function assignSceneVisuals(){
  for(const [id,node] of Object.entries(scenes)){
   if(node.visuals)continue;
