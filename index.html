@@ -2284,7 +2284,7 @@ function personalizeScene(node,s){
 }
 
 function render(){
- socialEnsure(state);const node=scenes[state.at];if(!node){finish(state.at);return}
+ socialEnsure(state);const node=scenes[state.at];if(!node){if(!endings[state.at])throw new Error('Unknown story destination: '+state.at);finish(state.at);return}
  state.chapter=node.chapter;
  $('game').dataset.scene=node.bg;
  $('game').classList.toggle('author-fracture',state.at==='authorLoop'||state.at==='authorBreak'||state.at==='route_aurelian_reckoning');
@@ -2322,7 +2322,7 @@ function personalizeEnding(key,base,s){
  if(key.startsWith('end_')&&key.includes('_')&&s.route){
   if((p.villainy||0)>=55)base+='\n\nThe people who once called you a villainess now speak your name with more caution. Some of that fear was earned by decisions you chose yourself.';
   else if((p.compassion||0)>=55)base+='\n\nYou think of Tessa, Mira, and the people who trusted you. Their lives have continued beyond the romance that changed yours.';
-  if((p.recall||55)<=22)base+='\n\nYou can no longer remember every turn of the novel that first brought you here. This ending belongs to the woman you became, not the pages you once read.';
+  if((p.recall??55)<=22)base+='\n\nYou can no longer remember every turn of the novel that first brought you here. This ending belongs to the woman you became, not the pages you once read.';
  }
  return base+marginEnding(key,s)+sarethEnding(key,s)+towerEnding(key,s)+northEnding(key,s)+capitalEnding(key,s);
 }
@@ -2344,7 +2344,7 @@ function journal(){
  const panel=$('journalPanel');$('journalContent').innerHTML='';
  const data=document.createElement('div');data.innerHTML='<div class="lore"><strong>Lady Seraphina Vale</strong><br>Reputation: '+state.rep+' · Influence: '+state.inf+' · Secrets: '+state.sec+'</div>';
  $('journalContent').appendChild(data);
- const aff=document.createElement('div');aff.className='lore';aff.innerHTML=Object.entries(state.affections).map(([name,v])=>'<div class="entry"><span>'+people[name].name+'</span><b>'+('♥'.repeat(Math.min(6,Math.ceil(v/2)))||'—')+' ('+v+')</b></div>').join('');$('journalContent').appendChild(aff);socialJournal($('journalContent'));marginJournal($('journalContent'));sarethJournal($('journalContent'));towerJournal($('journalContent'));
+ const aff=document.createElement('div');aff.className='lore';aff.innerHTML=Object.entries(state.affections).map(([name,v])=>'<div class="entry"><span>'+people[name].name+'</span><b>'+('♥'.repeat(Math.max(0,Math.min(6,Math.ceil(v/2))))||'—')+'</b></div>').join('');$('journalContent').appendChild(aff);socialJournal($('journalContent'));marginJournal($('journalContent'));sarethJournal($('journalContent'));towerJournal($('journalContent'));
  const heading=document.createElement('p');heading.textContent='Collected evidence & keepsakes';$('journalContent').appendChild(heading);
  const list=document.createElement('div');list.className='inventory';list.innerHTML=(state.items.length?state.items.map(k=>'<span class="item">✦ '+items[k]+'</span>').join(''):'No clues yet.');$('journalContent').appendChild(list);
  const recent=document.createElement('p');recent.className='small';recent.textContent='Last choice: '+(state.history.at(-1)?.choice||'Your new life begins.');$('journalContent').appendChild(recent);
@@ -2360,7 +2360,7 @@ function load(){
   const base=initial();
   state={...base,...v,items:v.items.filter(x=>typeof x==='string'&&Object.hasOwn(items,x)),
    history:Array.isArray(v.history)?v.history.filter(x=>x&&typeof x.from==='string'&&typeof x.choice==='string'):[],
-   affections:{...base.affections,...v.affections},
+   affections:Object.fromEntries(Object.entries(base.affections).map(([id,value])=>[id,Number.isFinite(v.affections[id])?v.affections[id]:value])),
    traits:{...base.traits,...(v.traits&&typeof v.traits==='object'?v.traits:{})},
    personality:{...base.personality,...(v.personality&&typeof v.personality==='object'?v.personality:{})},
    flags:{...v.flags},
