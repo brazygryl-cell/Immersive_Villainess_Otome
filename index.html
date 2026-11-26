@@ -2074,6 +2074,111 @@ flowContinuity=function(text,s){
  return out
 };
 
+
+/* Organic pacing: a scene begins with a concrete circumstance, not a system
+   explanation. Preserve mechanically significant callbacks and stable IDs. */
+const organicHubs={
+ exclusive_act5Night:['Two mornings after the verdict, Belden leaves the breakfast tray beside a small pile of letters. The front door is open for the first time since your arrest. Someone in the courtyard is arguing about a delivery of coal.','For the moment, the estate is yours to return to.'],
+ exclusive_capital_grain_end:['The grain hearing runs past luncheon. Halden collects the papers while a servant opens the windows. By the time you leave the council room, two messages have been brought to your attention.','Cassian is still with the ministers; you have a little time before dinner.'],
+ exclusive_north_hearing_end:['The hall empties slowly. Outside, the stable boys are breaking ice in the troughs, and the kitchen is sending hot bread up to the watch.','Elian has another meeting with the officers. You can attend to your own affairs before he returns.'],
+ exclusive_tower_evening_end:['The bells mark the end of the evening lecture. Below the galleries, the lamp seller is trying to persuade a stubborn enchantment to work.','There is still time before Lucien finishes his work.'],
+ exclusive_sareth_evening_end:['By late afternoon the harbor has begun to quiet. The last fish baskets are carried away, and someone is singing from a neighboring courtyard.','There are a few hours left before the next day’s work.'],
+ exclusive_sareth_dispute_end:['The arbitration clerk calls the next case. Outside the office, a cart piled with oranges has blocked half the street. Sefa pauses to check the company schedule.','The hearing is over for today.'],
+ exclusive_margin_evening_end:['The lamps in the square burn down. Vesper is folding her fabric; the Archivist has stacked the bowls beside the fountain. Aurelian is nowhere to be seen for the moment.','The quarter continues its evening without him.']
+};
+for(const [id,lines] of Object.entries(organicHubs))if(scenes[id])scenes[id].text=lines.join('\n\n');
+const organicDynamic={
+ cassian:['Cassian finds you in the little passage behind the council chamber. “I have escaped Halden for precisely forty minutes.” He glances at the papers under your arm. “Tell me you have something more interesting planned.”','The afternoon is free until the next council bell.'],
+ elian:['Elian returns from the western watch with snow on his coat. He hands his gloves to a servant and asks whether you have eaten. Behind him, Rowan is discussing a supply delivery with the stable master.','The afternoon stretches ahead, unusually quiet.'],
+ lucien:['A folded note lands on your desk. It contains a drawing of a distinctly offended owl and the words: Your presence would improve this afternoon. Below it, in Neri’s handwriting: He has forgotten the lecture ends at four.','You have a little time before the next bell.'],
+ kael:['Kael is well enough to leave his bed, although the physician has forbidden him to lift anything heavier than a plate. Sefa is taking accounts to the warehouse. He watches her go, then looks at you. “I am apparently a man of leisure.”','Outside, the bread seller is calling down the street.'],
+ aurelian:['A small card appears between the pages of your journal. For once it is not written on the page itself. Aurelian has drawn a little stage curtain on the envelope. You hear laughter from the square beyond the window.','The afternoon has not yet been arranged.']
+};
+const organicLabels={
+ cassian:['Read the minister’s proposal with Cassian.','Take supper with him away from the council papers.','Review the schedule Halden brought.','Speak with the minister’s secretary.','Keep my afternoon free.'],
+ elian:['Join Elian and Rowan in the map room.','Spend the afternoon by the fire with him.','Discuss the carriage arrangements.','Hear the landholder’s request.','Go about my own affairs.'],
+ lucien:['Look over the disputed calculations with Lucien and Neri.','Find out what Lucien considers a date.','Review the observation schedule.','Discuss the proposed foreign-access restrictions.','Keep my own afternoon free.'],
+ kael:['Help Sefa review the cargo arrangement.','Make supper with Kael.','Talk about what I will do during the next voyage.','Hear the trader’s proposal.','Spend the afternoon on my own errands.'],
+ aurelian:['Visit the Archive with Ione and Aurelian.','Attend the little performance.','See the garden he has prepared.','Examine the proposed revision.','Spend the afternoon in the quarter.']
+};
+const organicPolitical={
+ cassian:['Accept the patronesses’ invitation.','Meet the minister’s secretary.','Prepare the registry briefing.','File a public petition.'],
+ elian:['Meet Beatrice and the landholders.','Hear the supplier’s proposal.','Review the refuge estimates with Rowan.','Take the village petitions to the assembly.'],
+ lucien:['Meet Anwen and Neri about participant rights.','Discuss foreign access with the senior researcher.','Examine the unpublished finding with Vespera.','Submit a comment on the public agenda.'],
+ kael:['Coordinate deliveries with Naima.','Hear the merchant’s contract proposal.','Review the cargo entries with Sefa.','Read the guild’s public contract notices.'],
+ aurelian:['Meet Ione and the residents.','Discuss the proposed revisions with Aurelian.','Compare the inconsistent records.','Enter a statement in the public register.']
+};
+const organicChoiceBefore=storyChoices;
+storyChoices=function(node,s){
+ let a=organicChoiceBefore(node,s);
+ const id=s.at;
+ if(/^dynamic_(cassian|elian|lucien|kael|aurelian)$/.test(id)){
+  const route=id.slice(8),suffixes=['confidence','private','dependent','power','ordinary'];
+  a=a.map(c=>{const i=suffixes.findIndex(k=>c[1]===id+'_'+k);return i<0?c:[organicLabels[route][i],c[1],c[2],c[3]]});
+ }
+ if(/^politics_(cassian|elian|lucien|kael|aurelian)$/.test(id)){
+  const route=id.slice(9);a=a.map(c=>{const i=Number(c[1].slice(-1));return Number.isInteger(i)&&i>=0&&i<4?[organicPolitical[route][i],c[1],c[2],c[3]]:c});
+ }
+ return a
+};
+/* Distinct transitions for the five lives, based on chapter boundaries. */
+const livedTransitions={
+ cassian:{7:'The palace has settled into a familiar rhythm: petitions before noon, meals interrupted by ministers, and evenings that rarely end when Cassian says they will.',8:'By the winter reception, you recognize which council members arrive early and which prefer to make an entrance.',9:'The mornings grow colder. The council’s business carries on long after the lamps in the courtyard are lit.',10:'The ceremonial preparations are beginning to crowd the palace corridors. Ordinary government has not stopped to accommodate them.',11:'Tailors, clerks and heralds have taken over the lower galleries. The coronation is no longer a distant subject of conversation.'},
+ elian:{7:'Snow gathers along the outer walls. The kitchen keeps its ovens lit through the night, and the household learns to plan its errands around the weather.',8:'The roads remain difficult. Soldiers returning from patrol bring news of the villages as often as news of the border.',9:'The snow begins to soften at the edge of the courtyard, though the northern roads are still unreliable.',10:'The first thaw brings work of its own. The stable master complains about mud, and the assembly is already discussing repairs.',11:'The days are longer now. The household opens its windows in the afternoon, and the winter stores are counted again.'},
+ lucien:{7:'The Tower’s bells become familiar: lectures, laboratory sessions, and the hour when the lower galleries finally close.',8:'A new term begins. Apprentices carry equipment through the corridors, and the scholars complain about the demands on their time.',9:'The observatory is busy well after sunset. In the lower galleries, the shops still close at their ordinary hours.',10:'The next Council session approaches. The laboratories are full of revised calculations, disputed reports and very tired apprentices.',11:'The Tower’s work continues even as the anomaly becomes more difficult to contain. The bells still ring.'},
+ kael:{7:'The harbor has become familiar enough that you recognize the bread seller’s call before you see her cart.',8:'The company’s work takes Kael between the port and the inland routes. The market changes with each new cargo.',9:'The season turns. The harbor fills with boats again, and the courtyards smell of oranges and cooking fish.',10:'Repairs, invoices and departures occupy the harbor. The next voyage is becoming a matter of ordinary conversation.',11:'The next trading season is close. New contracts arrive at the warehouse, and the neighborhood begins its preparations.'},
+ aurelian:{7:'The quarter has its own small routines. Vesper opens her stall, the Archivist sorts the returned books, and the clocks occasionally disagree.',8:'Several days pass according to the residents’ clocks. According to Aurelian, the matter is somewhat more complicated.',9:'The square has begun to feel familiar. Even the unreliable fountain has a recognizable habit of overflowing at inconvenient hours.',10:'The Keepers are preparing another review. People carry their own records through the square, sometimes stopping to argue about the weather.',11:'The quarter’s clocks no longer agree even approximately. The residents keep working by the light of their lamps.'}
+};
+const beforeOrganicFlow=flowNarration;
+flowNarration=function(s){
+ const out=beforeOrganicFlow(s),h=s.history?.at(-1),p=h&&scenes[h.from],n=scenes[s.at];
+ if(p&&n&&n.chapter>p.chapter&&s.route&&livedTransitions[s.route]?.[n.chapter]&&!FLOW_CHAPTERS[s.at])return livedTransitions[s.route][n.chapter]+'\n\n';
+ return out
+};
+/* Remove authorial coaching and repeated abstract conclusions, while retaining
+   concrete information, character dialogue and conditional evidence callbacks. */
+const organicBefore=flowContinuity;
+flowContinuity=function(text,s){
+ let out=organicBefore(text,s),at=s.at,f=s.flags;
+ if(organicDynamic[at.slice(8)]&&/^dynamic_[a-z]+$/.test(at)){
+  const [opening,close]=organicDynamic[at.slice(8)];out=opening+'\n\n'+close;
+ }
+ if(at==='routeCrossroads'){
+  const lines=['Belden has set the travel papers beside your breakfast. The tribunal has released you, but the transport inquiry is still open.'];
+  if(f.picked_court)lines.push('Halden has sent the audit schedule. The palace will need people who understand the original complaint.');
+  if(f.picked_north)lines.push('A message from Northern supply command concerns the missing convoy and the winter roads.');
+  if(f.picked_tower)lines.push('The Tower has sent notice of its continuing examination.');
+  lines.push('The Ashwind’s departure is listed in the harbor notices. Beside them lies your journal, open to a sentence you did not write.');
+  lines.push('For the first time since you awoke in this house, your bags need not be packed by someone else. You look at the papers and decide where to begin.');
+  out=lines.join('\n\n');
+ }
+ if(at==='courtship_hub')out='Belden has cleared the next few afternoons. There are appointments you could request, acquaintances you might visit, and a few people whose company you would like to know outside the investigation. None of the arrangements requires an answer about marriage.';
+ if(at==='c3_recovery'&&!tessaConfides(s))out=out.replace(/Tessa is waiting with a bowl of soup\.[\s\S]*?“If this is simply a stolen supply convoy, why would anyone want you dead\?”/,'A bowl of soup has been left on your desk. Belden brings the latest correspondence and asks whether the disputed charge warrants further action. You have a more troubling question: why has an ordinary accounting inquiry drawn such attention?');
+ if(at==='act3Return'&&!miraFriend(s))out=out.replace('“You promised yourself you’d rest,” she says, before gently reminding you that Mira agreed to meet tomorrow.','“You promised yourself you’d rest,” she says. A reply from the charity office is expected tomorrow.').replace("“You promised yourself you'd rest,” she says, before gently reminding you that Mira agreed to meet tomorrow.","“You promised yourself you'd rest,” she says. A reply from the charity office is expected tomorrow.");
+ if(at==='route_kael_14'&&f.sareth_home_separate)out=out.replace('He shows you the contract at the kitchen table, where the afternoon sun falls across the papers.','He brings the contract to your room, where the afternoon sun falls across the papers.').replace('The house is still imperfect. One window sticks when the weather changes, and the herb garden needs more care than either of you expected.','Through the window you can see the neighboring courtyards. The bread seller has left a loaf on your doorstep.');
+ if(at==='route_kael_14'&&!f.sareth_title&&!f.sareth_home_joint&&!f.sareth_home_separate)out=out.replace('The house is still imperfect. One window sticks when the weather changes, and the herb garden needs more care than either of you expected.','The house purchase has not become a settled arrangement. You still have decisions of your own to make.');
+ if(at==='route_elian_17'&&!auditMira(s))out=out.replace('A fresh letter from Mira waits on your desk.','A household letter waits on your desk.');
+ if(at==='capital_evening'&&!auditMira(s))out=out.replace('Mira has kept your Thursday place at the table.','');
+ const discard=[
+ /^Romantic paths open when /,
+ /^You may spend more time getting to know /,
+ /^In the weeks that follow, ordinary duties and conversations continue between the moments you remember most clearly\.$/,
+ /^You can move between these /,
+ /^The response that once came most easily no longer feels inevitable\./,
+ /^You have grown accustomed to asking what authority is actually yours before accepting an arrangement\.$/,
+ /^Your first instinct is to ask what each person stands to gain\. You can act on that calculation or set it aside\.$/,
+ /^Part of you would welcome someone else making the decision\. You have relied on that comfort before, but the answer is still yours\.$/,
+ /^You find yourself noticing the people who would have to live with the decision, even if they have no place in this room\.$/,
+ /^You are beginning to understand that caring about people can make the work harder, not easier\./,
+ /^You have not become the unstoppable villainess of a new story\./,
+ /^You discover a kind of hope that doesn't feel dramatic\./,
+ /^You realize that freedom does not erase responsibility\./,
+ /^You are learning that a person has to live between investigations\.$/,
+ /^No one is waiting with an effortless declaration of love\.$/
+ ];
+ const seen=new Set();return out.split(/\n\n+/).map(p=>p.trim()).filter(p=>p&&!discard.some(r=>r.test(p))&&!seen.has(p)&&(seen.add(p),true)).join('\n\n');
+};
+
 function assignSceneVisuals(){
  for(const [id,node] of Object.entries(scenes)){
   if(node.visuals)continue;
