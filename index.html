@@ -449,6 +449,42 @@ html{color-scheme:dark}*{scrollbar-width:thin;scrollbar-color:#a88b66 #251b28}#g
 }
 @media(max-height:600px) and (min-width:761px){.game{--folio-top:76px;--folio-bottom:20px}.game:has(#startPanel.hidden) .story{font-size:21px}.game:has(#startPanel.hidden) .chapter-heading{font-size:30px}}
 @media(prefers-reduced-motion:reduce){.folio-page-flash{display:none!important}.game:has(#startPanel.hidden) .dialogue *{animation:none!important}}
+
+/* Reader's marginalia: loose notes, taped observations and a ruled notebook. */
+#journalPanel,#detailsPanel[data-note]{background:#21142172;backdrop-filter:blur(2px);padding:clamp(15px,4vw,45px);z-index:31;place-items:center}
+#journalPanel .panel-inner,#detailsPanel[data-note] .panel-inner{--note-ink:#51353a;--note-rule:#bca082;position:relative;width:min(650px,96%);max-height:86dvh;border:1px solid #bc9866;border-radius:3px 9px 9px 3px;background:repeating-linear-gradient(180deg,transparent 0 27px,#a58d7540 27px 28px),linear-gradient(100deg,#dbc59e,#f8edcf 8%,#fff2d7 91%,#e6d0aa);background-position:0 10px;box-shadow:4px 4px 0 #d6bd94,7px 7px 0 #a88a65,10px 11px 0 #6b3848,13px 15px 0 #a17b50,0 24px 65px #170e17bb;padding:35px 33px 24px 49px;color:var(--note-ink);scrollbar-width:thin;scrollbar-color:#aa8053 #e7d1aa;animation:notePlace .28s ease-out both}
+#journalPanel .panel-inner:before,#detailsPanel[data-note] .panel-inner:before{content:"";position:absolute;top:0;bottom:0;left:24px;width:1px;height:auto;background:#ba68777a;opacity:1;pointer-events:none}
+#journalPanel .panel-inner:after,#detailsPanel[data-note] .panel-inner:after{content:"";position:absolute;top:8px;right:30px;width:91px;height:23px;background:#d9b7839c;border:1px solid #c8a57755;transform:rotate(5deg);clip-path:polygon(2% 0,98% 0,100% 15%,97% 30%,100% 45%,97% 60%,100% 80%,98% 100%,2% 100%,0 85%,3% 70%,0 55%,3% 40%,0 20%);pointer-events:none}
+#journalPanel h2,#detailsPanel[data-note] h2{font:700 clamp(28px,4vw,43px)/1.05 "Cormorant Garamond",Georgia,serif;color:#713d50;background:none;-webkit-text-fill-color:currentColor;text-shadow:none;margin:0 0 18px;padding:0 0 8px;border-bottom:2px solid #b68b65;letter-spacing:.02em}
+#journalPanel .panel-inner p,#detailsPanel[data-note] .panel-inner p{font:500 19px/1.48 "Cormorant Garamond",Georgia,serif;color:#573b3d;margin:10px 0}
+#journalPanel .lore,#detailsPanel[data-note] .lore{background:#fff8e6a6;border:1px solid #b99a6d80;border-radius:2px;color:#51353a;margin:12px 0;padding:13px 15px;font:600 18px/1.45 "Cormorant Garamond",Georgia,serif;box-shadow:1px 3px 5px #79563115}
+#journalPanel .lore strong,#detailsPanel[data-note] .lore strong{color:#814659;font-size:21px}
+#journalPanel .lore .lore,#detailsPanel[data-note] .lore .lore{background:#eddeb399;margin:12px 0 3px;border:0;border-left:3px solid #b38d65;box-shadow:none}
+#journalPanel .entry,#detailsPanel[data-note] .entry{font:600 18px/1.3 "Cormorant Garamond",Georgia,serif;color:#50323a;border-bottom:1px dashed #b99a70;align-items:start;gap:12px;padding:10px 0}
+#journalPanel .entry b,#detailsPanel[data-note] .entry b{color:#8c4058;text-align:right}
+#journalPanel .item,#detailsPanel[data-note] .item{background:#eddb9d;color:#62452f;border:1px solid #c8a66b;border-radius:1px;box-shadow:2px 3px 4px #795b3630;font:600 17px "Cormorant Garamond",Georgia,serif;padding:9px 12px;transform:rotate(-1deg)}
+#journalPanel .item:nth-child(even){transform:rotate(1deg);background:#eed2c1}
+#journalPanel .small,#detailsPanel[data-note] small{font-style:italic;color:#805849}
+#journalPanel .cta,#detailsPanel[data-note] .cta{border:1px solid #a98259;border-radius:3px;background:#713d50;color:#fff0d1;font:700 19px "Cormorant Garamond",Georgia,serif;letter-spacing:.02em;padding:10px 14px;box-shadow:2px 3px 0 #c2a276}
+#journalPanel .cta:hover,#detailsPanel[data-note] .cta:hover{background:#92586b}
+#detailsPanel[data-note] .ornament{color:#ad8457;text-shadow:none;letter-spacing:.25em;font-size:16px;margin-bottom:7px;text-align:left}
+#detailsPanel[data-note="affection"] .panel-inner{width:min(820px,96%);background:linear-gradient(110deg,#e6cda9,#f6e6cf)}
+#detailsPanel[data-note="affection"] #detailsContent>.entry{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;padding:15px 16px;margin:13px 2px;border:0;border-bottom:1px solid #c9a38e;background:linear-gradient(135deg,#f2d8ce,#ebc4b9);box-shadow:2px 4px 7px #7a523540;transform:rotate(-.5deg)}
+#detailsPanel[data-note="affection"] #detailsContent>.entry:nth-of-type(even){background:linear-gradient(135deg,#f8e6ad,#ecd498);transform:rotate(.5deg)}
+#detailsPanel[data-note="affection"] #detailsContent>.entry:before{content:"";position:absolute;top:-5px;left:43%;width:44px;height:11px;background:#dfc08b99;transform:rotate(-5deg)}
+#detailsPanel[data-note="inventory"] .panel-inner{width:min(530px,96%);background:linear-gradient(120deg,#e9d7a5,#f7e9bb)}
+#detailsPanel[data-note="inventory"] #detailsContent>.entry{display:block;position:relative;background:#fff1c2;border:0;padding:15px 16px;margin:12px 0;box-shadow:2px 4px 5px #795b3633;transform:rotate(-1deg)}
+#detailsPanel[data-note="inventory"] #detailsContent>.entry:nth-of-type(even){background:#f2d5c4;transform:rotate(1deg)}
+#detailsPanel[data-note="load"] .panel-inner{width:min(480px,96%);background:linear-gradient(120deg,#e5cfa3,#f8e9c9)}
+#settingsMenu{background:repeating-linear-gradient(0deg,transparent 0 29px,#b99b7430 29px 30px),linear-gradient(110deg,#f5e2a9,#ecd39a);color:#573841;border:1px solid #c8a469;border-radius:2px;box-shadow:3px 5px 0 #a98760,5px 10px 20px #160d18aa;transform:rotate(-1deg);padding:14px 11px 10px;animation:notePlace .22s ease-out both;max-height:calc(100dvh - 80px);overflow-y:auto;scrollbar-color:#a98153 #ecd39a;scrollbar-width:thin}
+#settingsMenu:before{content:"";position:absolute;top:4px;left:50%;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#f2cd90,#8b4e40 70%);box-shadow:1px 2px 3px #68432c77}
+#settingsMenu .settings-heading{color:#784557;font-size:23px;border-bottom:1px solid #b78d5a}
+#settingsMenu button{color:#573841;font:700 18px/1.2 "Cormorant Garamond",Georgia,serif;border-bottom:1px dashed #b78d5a80;border-radius:2px;padding:10px 8px}
+#settingsMenu button:hover{background:#b77c6c40;color:#713d50}
+#settingsMenu button:focus-visible,#journalPanel button:focus-visible,#detailsPanel[data-note] button:focus-visible{outline:2px solid #80505b;outline-offset:3px}
+@keyframes notePlace{from{opacity:0;translate:0 -9px;scale:.98}to{opacity:1;translate:0 0;scale:1}}
+@media(max-width:650px){#journalPanel,#detailsPanel[data-note]{padding:12px}#journalPanel .panel-inner,#detailsPanel[data-note] .panel-inner{padding:28px 15px 18px 27px;max-height:88dvh}#journalPanel .panel-inner:before,#detailsPanel[data-note] .panel-inner:before{left:13px}#journalPanel .entry,#detailsPanel[data-note] .entry{font-size:17px}#detailsPanel[data-note="affection"] #detailsContent>.entry{padding:12px;grid-template-columns:1fr;gap:4px}#detailsPanel[data-note="affection"] .entry b{text-align:left}#settingsMenu{width:195px;transform:none}}
+@media(prefers-reduced-motion:reduce){#journalPanel .panel-inner,#detailsPanel[data-note] .panel-inner,#settingsMenu{animation:none!important}}
 </style></head>
 <body><div class="shell"><header class="royal-header">
  <div class="header-actions"><button class="settings-trigger" id="menuToggle" type="button" aria-label="Open game settings" aria-expanded="false" aria-controls="settingsMenu">⚙ <span class="chevron">⌄</span></button>
@@ -2387,7 +2423,7 @@ function outfitFor(node,s){
 }
 function expressionAsset(spec){const e=spec.expression||'neutral';return ({neutral:'composed',guarded:'calculating',shocked:'distressed',soft:'affectionate',angry:'irritated',worried:'distressed'})[e]||'composed'}
 function gallery(kind){
- setSettingsOpen(false);const c=collection(),root=$('detailsContent');root.replaceChildren();$('detailsTitle').textContent=kind==='wardrobe'?'Seraphina’s Wardrobe':kind==='endings'?'Ending Gallery':'Illustration Gallery';
+ delete $('detailsPanel').dataset.note;setSettingsOpen(false);const c=collection(),root=$('detailsContent');root.replaceChildren();$('detailsTitle').textContent=kind==='wardrobe'?'Seraphina’s Wardrobe':kind==='endings'?'Ending Gallery':'Illustration Gallery';
  const grid=document.createElement('div');grid.className='gallery-grid';
  function tile(label,unlocked,path){const box=document.createElement('div');box.className='gallery-tile';const placeholder=document.createElement('div');placeholder.className='gallery-placeholder';placeholder.textContent=unlocked?'◇':'♙';box.appendChild(placeholder);if(unlocked&&path){const img=document.createElement('img');img.alt=label;img.hidden=true;img.onload=()=>{placeholder.hidden=true;img.hidden=false};img.onerror=()=>{placeholder.textContent='◇';};img.src=path;box.appendChild(img)}const name=document.createElement('div');name.textContent=unlocked?label:'Undiscovered';box.appendChild(name);const note=document.createElement('small');note.textContent=unlocked?'Discovered':'Locked';box.appendChild(note);grid.appendChild(box)}
  if(kind==='wardrobe'){for(const [route,names] of Object.entries(wardrobeCatalog))for(const name of names){const key=route+'/'+name;tile(route+' · '+name,c.wardrobe.includes(key),assetRoot+'seraphina/outfits/'+key+'.png')}}
@@ -2623,7 +2659,7 @@ function finish(key){
  $('endPanel').classList.remove('hidden');state.at=key;store();
 }
 function journal(){
- const panel=$('journalPanel');$('journalContent').innerHTML='';
+ setSettingsOpen(false);const panel=$('journalPanel');$('journalContent').innerHTML='';
  const data=document.createElement('div');data.innerHTML='<div class="lore"><strong>Lady Seraphina Vale</strong><br>Reputation: '+state.rep+' · Influence: '+state.inf+' · Secrets: '+state.sec+'</div>';
  $('journalContent').appendChild(data);
  const aff=document.createElement('div');aff.className='lore';aff.innerHTML=Object.entries(state.affections).map(([name,v])=>'<div class="entry"><span>'+people[name].name+'</span><b>'+('♥'.repeat(Math.max(0,Math.min(6,Math.ceil(v/2))))||'—')+'</b></div>').join('');$('journalContent').appendChild(aff);socialJournal($('journalContent'));marginJournal($('journalContent'));sarethJournal($('journalContent'));towerJournal($('journalContent'));
@@ -2663,7 +2699,7 @@ function startMusic(){
 }
 
 function courtPanel(kind){
- const title=$('detailsTitle'),content=$('detailsContent');content.innerHTML='';
+ $('detailsPanel').dataset.note=kind;setSettingsOpen(false);const title=$('detailsTitle'),content=$('detailsContent');content.innerHTML='';
  if(kind==='affection'){
   title.textContent='The Court of Hearts';
   const intro=document.createElement('p');intro.textContent='Allies and adversaries remember how you treat them.';content.appendChild(intro);
