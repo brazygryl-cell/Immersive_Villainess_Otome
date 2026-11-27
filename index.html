@@ -2728,8 +2728,8 @@ function audioPrefs(){try{localStorage.setItem('asteriaAudioPreferences',JSON.st
 function audioContext(){
  try{
  if(!audio){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;audio=new C()}
- if(!musicBus){musicBus=audio.createGain();fxBus=audio.createGain();scoreFilter=audio.createBiquadFilter();scoreFilter.type='lowpass';scoreFilter.frequency.value=3400;musicBus.gain.value=musicOn?musicVolume:0;fxBus.gain.value=soundOn?soundVolume:0;musicBus.connect(scoreFilter);scoreFilter.connect(audio.destination);
- const hall=audio.createConvolver(),wet=audio.createGain(),impulse=audio.createBuffer(2,Math.floor(audio.sampleRate*1.65),audio.sampleRate);for(let ch=0;ch<2;ch++){const d=impulse.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3.8)*.32}hall.buffer=impulse;wet.gain.value=.19;scoreFilter.connect(hall);hall.connect(wet);wet.connect(audio.destination);fxBus.connect(audio.destination);
+ if(!musicBus){musicBus=audio.createGain();fxBus=audio.createGain();scoreFilter=audio.createBiquadFilter();scoreFilter.type='lowpass';scoreFilter.frequency.value=3800;musicBus.gain.value=musicOn?musicVolume:0;fxBus.gain.value=soundOn?soundVolume:0;musicBus.connect(scoreFilter);scoreFilter.connect(audio.destination);
+ const hall=audio.createConvolver(),wet=audio.createGain(),impulse=audio.createBuffer(2,Math.floor(audio.sampleRate*1.65),audio.sampleRate);for(let ch=0;ch<2;ch++){const d=impulse.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3.8)*.32}hall.buffer=impulse;wet.gain.value=.085;scoreFilter.connect(hall);hall.connect(wet);wet.connect(audio.destination);fxBus.connect(audio.destination);
  paperBuffer=audio.createBuffer(1,Math.floor(audio.sampleRate*.8),audio.sampleRate);const d=paperBuffer.getChannelData(0);let v=0;for(let i=0;i<d.length;i++){v=.34*v+.66*(Math.random()*2-1);d[i]=v}}
  if(audio.state==='suspended')audio.resume().catch(()=>{});return audio
  }catch(e){return null}
@@ -2745,24 +2745,23 @@ function voice(n,t,len,amp,kind='piano',bus=musicBus){
 // Bowed ensemble: independently detuned voices, shaped bow attack, vibrato and body resonance.
 function bowed(n,t,len,amp,kind='violin'){
  if(!audio||!musicBus)return;
- const lead=kind==='violin',cello=kind==='cello',g=audio.createGain(),body=audio.createBiquadFilter(),soft=audio.createBiquadFilter();
- body.type='peaking';body.frequency.value=cello?330:lead?1900:850;body.Q.value=.8;body.gain.value=3.4;
- soft.type='lowpass';soft.frequency.value=cello?1250:lead?2900:2000;soft.Q.value=.45;
- g.connect(body);body.connect(soft);soft.connect(musicBus);
- const a=Math.min(len*.23,lead?.13:.36),release=Math.min(.42,len*.3),end=t+len;
- g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(amp,t+a);g.gain.setValueAtTime(amp*.83,t+Math.max(a,len-release));g.gain.exponentialRampToValueAtTime(.0001,end);
- const lfo=audio.createOscillator(),vib=audio.createGain();lfo.frequency.value=lead?5.3:cello?4.1:4.7;vib.gain.setValueAtTime(1,t);vib.gain.linearRampToValueAtTime(lead?16:9,t+Math.min(.4,len*.55));lfo.connect(vib);
- const detunes=lead?[-5,5]:[-9,0,8];
- for(const [i,d] of detunes.entries()){
- const o=audio.createOscillator(),p=audio.createGain();o.type='sawtooth';o.frequency.value=hz(n);o.detune.value=d;vib.connect(o.detune);p.gain.value=1/detunes.length;o.connect(p);p.connect(g);o.start(t+i*.008);o.stop(end+.03)
- }
- lfo.start(t);lfo.stop(end+.03);
+ const g=audio.createGain(),soft=audio.createBiquadFilter();soft.type='lowpass';soft.frequency.value=kind==='violin'?2100:1450;soft.Q.value=.15;g.connect(soft);soft.connect(musicBus);
+ const attack=Math.min(len*.3,.48),end=t+len;
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(amp,t+attack);g.gain.exponentialRampToValueAtTime(.0001,end);
+ const lfo=audio.createOscillator(),vib=audio.createGain();lfo.frequency.value=4.8;vib.gain.value=5;lfo.connect(vib);
+ for(const [ratio,level,wave,detune] of [[1,.66,'triangle',-3],[1,.28,'sine',4],[2,.07,'sine',0]]){
+ const o=audio.createOscillator(),p=audio.createGain();o.type=wave;o.frequency.value=hz(n)*ratio;o.detune.value=detune;vib.connect(o.detune);p.gain.value=level;o.connect(p);p.connect(g);o.start(t);o.stop(end+.03)}
+ lfo.start(t);lfo.stop(end+.03)
 }
-//
+function crystalPiano(n,t,len,amp){
+ if(!audio||!musicBus)return;const g=audio.createGain();g.connect(musicBus);
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(amp,t+.012);g.gain.exponentialRampToValueAtTime(amp*.25,t+len*.27);g.gain.exponentialRampToValueAtTime(.0001,t+len);
+ for(const [ratio,level] of [[1,1],[2.002,.24],[3.009,.09],[4.03,.025]]){const o=audio.createOscillator(),p=audio.createGain();o.type='sine';o.frequency.value=hz(n)*ratio;p.gain.value=level;o.connect(p);p.connect(g);o.start(t);o.stop(t+len+.04)}
+}
 // Each eight-bar phrase has its own melodic contour and harmonic progression.
 const ASTERIA_SCORE={
  title:{beat:.64,ch:[[48,55,60,64],[45,52,57,60],[41,48,53,57],[43,50,55,59],[48,55,60,64],[45,52,57,60],[41,48,53,57],[43,50,55,62]],m:[[64,67,72,71],[69,67,64,null],[65,69,72,74],[71,67,62,null],[64,67,76,74],[72,69,67,null],[65,64,62,65],[67,71,72,null]]},
- court:{beat:.62,ch:[[50,57,62,65],[46,53,58,62],[53,60,65,69],[48,55,60,64],[50,57,62,65],[46,53,58,62],[55,62,67,70],[45,52,57,61]],m:[[65,69,74,72],[70,69,65,null],[69,72,77,76],[72,67,64,null],[65,69,74,77],[74,70,69,null],[67,70,74,72],[69,67,65,null]]},
+ court:{beat:.66,ch:[[53,60,65,69],[48,55,60,64],[50,57,62,65],[46,53,58,62],[53,60,65,69],[48,55,60,64],[46,53,58,62],[48,55,60,67]],m:[[65,69,74,72],[70,69,65,null],[69,72,77,76],[72,67,64,null],[65,69,74,77],[74,70,69,null],[67,70,74,72],[69,67,65,null]]},
  cassian:{beat:.55,ch:[[48,55,60,64],[43,50,55,59],[45,52,57,60],[41,48,53,57],[48,55,60,64],[40,47,52,55],[41,48,53,57],[43,50,55,59]],m:[[67,72,76,74],[71,74,79,76],[72,69,72,76],[77,76,72,null],[67,72,79,76],[71,67,64,null],[65,69,72,74],[71,67,72,null]]},
  elian:{beat:.73,ch:[[45,52,57,60],[41,48,53,57],[48,55,60,64],[40,47,52,56],[45,52,57,60],[38,45,50,53],[41,48,53,57],[40,47,52,56]],m:[[69,72,76,74],[72,69,65,null],[67,72,76,79],[76,71,68,null],[69,72,81,76],[74,69,65,null],[65,69,72,71],[68,71,69,null]]},
  lucien:{beat:.67,ch:[[50,57,62,65],[46,53,58,62],[48,55,60,63],[45,52,57,60],[50,57,62,65],[53,60,65,69],[46,53,58,62],[45,52,57,61]],m:[[74,77,81,79],[77,74,70,null],[75,79,84,82],[81,76,72,null],[74,77,84,81],[79,77,72,null],[70,74,77,76],[73,76,74,null]]},
@@ -2776,23 +2775,23 @@ function scoreSchedule(){
  while(scoreTime<audio.currentTime+.3){
  const mood=currentScore();if(mood!==scoreMood){scoreMood=mood;scoreBar=0}
  const p=ASTERIA_SCORE[mood],i=scoreBar%p.ch.length,c=p.ch[i],b=p.beat,t=scoreTime,tense=state.at==='authorLoop'||state.at==='authorBreak';
- // A chamber ensemble carries the harmony and melody; harp remains a quiet ornament.
- bowed(c[0]-12,t,b*3.92,.047,'cello');
- bowed(c[1]-12,t+.04,b*3.85,.024,'viola');
- bowed(c[2],t+.07,b*3.78,.023,'viola');
- bowed(c[3],t+.10,b*3.70,.017,'viola');
- const arpeggio=[0,2,1,3,0,2,1,3];
- for(let k=0;k<8;k++)voice(c[arpeggio[k]],t+k*b/2,b*.85,k%2===0?.010:.006,'harp');
+ // Floating piano phrases, soft high string swells and sparse harp accents.
+ const bright=mood!=='aurelian'||!tense;
+ const upper=c[2]+(c[2]<60?12:0);
+ bowed(upper,t+.15,b*3.3,.014,'viola');
+ if(i%2===0)bowed(c[3]+(c[3]<64?12:0),t+b*.7,b*2.8,.009,'violin');
+ crystalPiano(c[0],t,b*2.4,.025);
+ crystalPiano(c[1],t+b*1.6,b*2.1,.016);
+ const pattern=[2,3,1,2,3,2];
+ for(let k=0;k<6;k++){const n=c[pattern[k]]+(k%3===1?12:0);crystalPiano(n,t+(k*.5+.25)*b,b*1.8,k%2===0?.013:.009)}
  p.m[i].forEach((n,k)=>{
   if(n===null)return;
-  const held=k===3||p.m[i][k+1]===null||k===2&&p.m[i][3]===null;
-  const pitch=n-(tense&&k===2?1:0),duration=b*(held?1.82:1.04);
-  bowed(pitch,t+k*b,duration,.062,'violin');
-  if(k===0||k===2)bowed(pitch-12,t+k*b+.06,b*1.72,.016,'viola');
+  const pitch=n-(tense&&k===2?1:0),offset=[0,.82,1.92,2.7][k];
+  crystalPiano(pitch,t+offset*b,b*(k===3||p.m[i][k+1]===null?2.4:1.65),.047);
+  if(k===2&&i%2===1)bowed(pitch,t+offset*b+.09,b*1.7,.016,'violin');
  });
- // A restrained countermelody makes the ensemble feel arranged rather than looped.
- if(i%2===1)bowed(c[2]+12,t+b*2.15,b*1.72,.015,'violin');
- if(tense)bowed(c[0]+18,t+b*2,b*1.8,.021,'violin');
+ if(bright&&i%4===3)voice(c[3]+12,t+b*3.25,b*1.3,.012,'harp');
+ if(tense&&i%2===1)bowed(c[2]+11,t+b*2,b*1.3,.009,'violin');
  scoreTime+=b*4;scoreBar++;
  }
 }
